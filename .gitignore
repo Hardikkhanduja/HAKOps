@@ -1,0 +1,35 @@
+# Dependencies — never commit these
+node_modules/
+*/node_modules/
+
+# Build outputs
+dist/
+build/
+.vite/
+
+# Environment / secrets — NEVER commit
+.env
+.env.local
+.env.*.local
+*.env
+
+# AWS credentials (extra safety net)
+.aws/
+credentials
+
+# Kiro IDE internals
+.kiro/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test coverage
+coverage/
+
+# Vite cache
+.vite/
