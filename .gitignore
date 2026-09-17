@@ -1,0 +1,24 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Generated output
+extracted_text.txt
+gemini_care_plan.json
+translated_care_plan.json
+care_plan.json
+
+# Medical/test documents
+*.pdf
+*.jpeg
+*.jpg
+*.png
+
+# Translation test outputs
+translated_text_*.txt
