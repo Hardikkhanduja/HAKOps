@@ -1,0 +1,70 @@
+{
+    "patient":  {
+                    "name":  "Sample Patient",
+                    "preferredLanguage":  "hi"
+                },
+    "originalDocument":  {
+                             "url":  "https://www.w3.org/WAI/WCAG21/Techniques/pdf/sample.pdf",
+                             "uploadedAt":  "2026-09-15T09:00:00Z"
+                         },
+    "carePlan":  {
+                     "medications":  [
+                                         {
+                                             "name":  "Amoxicillin 500mg",
+                                             "dosage":  "1 tablet",
+                                             "timing":  "Every 8 hours for 5 days",
+                                             "reviewRequired":  true
+                                         },
+                                         {
+                                             "name":  "Paracetamol 650mg",
+                                             "dosage":  "1 tablet",
+                                             "timing":  "As needed for fever, max 3 times a day",
+                                             "reviewRequired":  true
+                                         }
+                                     ],
+                     "followUps":  [
+                                       {
+                                           "type":  "appointment",
+                                           "description":  "Follow-up with Dr. Sharma",
+                                           "date":  "2026-09-22T10:00:00Z"
+                                       },
+                                       {
+                                           "type":  "test",
+                                           "description":  "Blood test - CBC",
+                                           "date":  "2026-09-20T09:00:00Z"
+                                       }
+                                   ],
+                     "dailyTasks":  [
+                                        {
+                                            "description":  "Change wound dressing",
+                                            "frequency":  "Once daily"
+                                        },
+                                        {
+                                            "description":  "Monitor temperature",
+                                            "frequency":  "Twice daily"
+                                        }
+                                    ],
+                     "warningSigns":  [
+                                          "Fever above 101F",
+                                          "Increased redness or swelling at incision site",
+                                          "Difficulty breathing"
+                                      ],
+                     "dietActivityRestrictions":  [
+                                                      "No heavy lifting for 2 weeks",
+                                                      "Soft food diet for first 3 days"
+                                                  ]
+                 },
+    "reminders":  [
+                      {
+                          "relatedTo":  "followUp-1",
+                          "sendAt":  "2026-09-19T09:00:00Z",
+                          "channel":  "email"
+                      },
+                      {
+                          "relatedTo":  "followUp-1",
+                          "sendAt":  "2026-09-21T09:00:00Z",
+                          "channel":  "email"
+                      }
+                  ],
+    "status":  "ready"
+}
