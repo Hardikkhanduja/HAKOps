@@ -1,59 +1,61 @@
-/**
- * carePlan.controller.js — Returns the full care plan per API_CONTRACT.md.
- *
- * Key rules:
- * - originalDocument.url is ALWAYS a fresh presigned GET URL (never a raw bucket URL).
- *   Raw bucket URLs cause "AccessDenied" XML to appear in DocumentView.
- * - reviewRequired: true on medications is NEVER suppressed or coerced.
- * - If status !== "ready", returns { status } only — no care plan data yet.
- * - 404 for unknown IDs.
- */
 'use strict';
 
 const carePlanRepository = require('../services/carePlanRepository');
-const s3Service          = require('../services/s3Service');
+const s3Service = require('../services/s3Service');
 
 async function getCarePlan(req, res, next) {
   try {
     const { id } = req.params;
-    const record  = await carePlanRepository.getRecord(id);
+    const record = await carePlanRepository.getRecord(id);
 
     if (!record) {
       const err = new Error('Not found');
       err.isOperational = true;
-      err.statusCode    = 404;
+      err.statusCode = 404;
       return next(err);
     }
 
-    // Care plan not ready yet — return just the status
     if (record.status !== 'ready') {
-      return res.status(200).json({ status: record.status });
+      return res.status(200).json({
+        status: record.status
+      });
     }
 
-    // Generate a FRESH presigned GET URL every time.
-    // NEVER return a raw S3 URL — private objects return AccessDenied XML.
-    const presignedUrl = await s3Service.getPresignedDownloadUrl(id);
+    const presignedUrl =
+      await s3Service.getPresignedDownloadUrl(id);
 
-    // Shape response exactly per docs/API_CONTRACT.md
+    const carePlan = record.carePlan || {};
+
     res.status(200).json({
       patient: {
-        name:              record.patientName || 'Patient',
-        preferredLanguage: record.preferredLanguage,
+        name: record.patientName || 'Patient',
+        preferredLanguage:
+          record.preferredLanguage || record.language || 'en'
       },
+
       originalDocument: {
-        url:        presignedUrl,       // presigned HTTPS, 15 min expiry
-        uploadedAt: record.uploadedAt,
+        url: presignedUrl,
+        uploadedAt: record.uploadedAt
       },
+
       carePlan: {
-        // reviewRequired is passed through as-is — NEVER modified.
-        medications:              (record.carePlan && record.carePlan.medications)              || [],
-        followUps:                (record.carePlan && record.carePlan.followUps)                || [],
-        dailyTasks:               (record.carePlan && record.carePlan.dailyTasks)               || [],
-        warningSigns:             (record.carePlan && record.carePlan.warningSigns)             || [],
-        dietActivityRestrictions: (record.carePlan && record.carePlan.dietActivityRestrictions) || [],
+        medications: carePlan.medications || [],
+
+        followUps: carePlan.follow_up
+          ? [carePlan.follow_up]
+          : [],
+
+        dailyTasks: carePlan.important_instructions || [],
+
+        warningSigns: carePlan.warnings || [],
+
+        dietActivityRestrictions:
+          carePlan.important_instructions || []
       },
+
       reminders: record.reminders || [],
-      status:    record.status,
+
+      status: record.status
     });
 
   } catch (err) {

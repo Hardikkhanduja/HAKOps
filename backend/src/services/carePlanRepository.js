@@ -1,93 +1,149 @@
 /**
- * carePlanRepository.js — Data access layer for care plan records.
+ * carePlanRepository.js
  *
- * CURRENT: In-memory Map — works without any AWS credentials.
- * Kamal: replace each TODO block with real DynamoDB SDK calls.
- *        Use @aws-sdk/lib-dynamodb. Table name from config/env.js.
- *        Function signatures must stay identical.
+ * DynamoDB data access layer.
  *
- * DynamoDB record shape (for Kamal's schema design):
- *   PK: id (String), status, preferredLanguage, uploadedAt,
- *       patientName, carePlan (Map), errorMessage (String, optional)
+ * Uses the existing DischargeCarePlans table.
+ * DynamoDB partition key: patientId
+ *
+ * For this MVP:
+ * Hardik's application id == patientId
+ * Kamal's Python pipeline uses DOCUMENT_ID == patientId
  */
+
 'use strict';
 
-// In-memory store — Kamal replaces with DynamoDB
-const store = new Map();
+const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
+const {
+  DynamoDBDocumentClient,
+  GetCommand,
+  PutCommand,
+  UpdateCommand
+} = require('@aws-sdk/lib-dynamodb');
+
+const {
+  DYNAMODB_TABLE,
+  AWS_REGION
+} = require('../config/env');
+
+const client = new DynamoDBClient({
+  region: AWS_REGION
+});
+
+const ddb = DynamoDBDocumentClient.from(client);
 
 /**
  * Creates a new care plan record.
- * @param {string} id
- * @param {{ preferredLanguage: string, status: string, uploadedAt: string }} data
  */
-async function createRecord(id, { preferredLanguage, status, uploadedAt }) {
-  // TODO(Kamal): replace with real AWS SDK call
-  // const { DynamoDBDocumentClient, PutCommand } = require('@aws-sdk/lib-dynamodb');
-  // await ddbDocClient.send(new PutCommand({
-  //   TableName: DYNAMODB_TABLE,
-  //   Item: { id, preferredLanguage, status, uploadedAt },
-  //   ConditionExpression: 'attribute_not_exists(id)',
-  // }));
-  store.set(id, { id, preferredLanguage, status, uploadedAt,
-                  patientName: null, carePlan: null, reminders: [], errorMessage: null });
+async function createRecord(
+  id,
+  { preferredLanguage, status, uploadedAt }
+) {
+  await ddb.send(
+    new PutCommand({
+      TableName: DYNAMODB_TABLE,
+
+      Item: {
+        patientId: id,
+        documentId: id,
+        language: preferredLanguage,
+        preferredLanguage,
+        status,
+        reviewStatus: 'PENDING',
+        uploadedAt,
+        patientName: null,
+        carePlan: null,
+        reminders: [],
+        errorMessage: null
+      },
+
+      ConditionExpression: 'attribute_not_exists(patientId)'
+    })
+  );
 }
 
 /**
- * Updates the status (and optionally error message) of a record.
- * @param {string} id
- * @param {string} status — "uploading"|"processing"|"ready"|"error"
- * @param {string} [errorMessage]
+ * Updates the status of a record.
  */
 async function updateStatus(id, status, errorMessage) {
-  // TODO(Kamal): replace with real AWS SDK call
-  // await ddbDocClient.send(new UpdateCommand({
-  //   TableName: DYNAMODB_TABLE,
-  //   Key: { id },
-  //   UpdateExpression: 'SET #s = :s, errorMessage = :e',
-  //   ExpressionAttributeNames: { '#s': 'status' },
-  //   ExpressionAttributeValues: { ':s': status, ':e': errorMessage || null },
-  // }));
-  const record = store.get(id);
-  if (record) {
-    record.status = status;
-    if (errorMessage !== undefined) record.errorMessage = errorMessage;
+  const values = {
+    ':status': status
+  };
+
+  let updateExpression =
+    'SET #status = :status';
+
+  const names = {
+    '#status': 'status'
+  };
+
+  if (errorMessage !== undefined) {
+    updateExpression += ', errorMessage = :errorMessage';
+    values[':errorMessage'] = errorMessage || null;
   }
+
+  await ddb.send(
+    new UpdateCommand({
+      TableName: DYNAMODB_TABLE,
+
+      Key: {
+        patientId: id
+      },
+
+      UpdateExpression: updateExpression,
+
+      ExpressionAttributeNames: names,
+      ExpressionAttributeValues: values
+    })
+  );
 }
 
 /**
- * Saves the processed care plan and patient name to the record.
- * @param {string} id
- * @param {{ patientName: string, carePlan: object }} data
+ * Saves the processed care plan and patient name.
  */
-async function saveCarePlan(id, { patientName, carePlan }) {
-  // TODO(Kamal): replace with real AWS SDK call
-  // await ddbDocClient.send(new UpdateCommand({
-  //   TableName: DYNAMODB_TABLE,
-  //   Key: { id },
-  //   UpdateExpression: 'SET patientName = :n, carePlan = :c',
-  //   ExpressionAttributeValues: { ':n': patientName, ':c': carePlan },
-  // }));
-  const record = store.get(id);
-  if (record) {
-    record.patientName = patientName;
-    record.carePlan    = carePlan;
-  }
+async function saveCarePlan(
+  id,
+  { patientName, carePlan }
+) {
+  await ddb.send(
+    new UpdateCommand({
+      TableName: DYNAMODB_TABLE,
+
+      Key: {
+        patientId: id
+      },
+
+      UpdateExpression:
+        'SET patientName = :patientName, carePlan = :carePlan',
+
+      ExpressionAttributeValues: {
+        ':patientName': patientName || 'Patient',
+        ':carePlan': carePlan
+      }
+    })
+  );
 }
 
 /**
- * Retrieves a full care plan record by ID.
- * @param {string} id
- * @returns {Promise<object|null>}
+ * Retrieves a full care plan record.
  */
 async function getRecord(id) {
-  // TODO(Kamal): replace with real AWS SDK call
-  // const { GetCommand } = require('@aws-sdk/lib-dynamodb');
-  // const result = await ddbDocClient.send(new GetCommand({
-  //   TableName: DYNAMODB_TABLE,
-  //   Key: { id },
-  // }));
-  // return result.Item || null;
-  return store.get(id) || null;
+  const result = await ddb.send(
+    new GetCommand({
+      TableName: DYNAMODB_TABLE,
+
+      Key: {
+        patientId: id
+      }
+    })
+  );
+
+  return result.Item || null;
 }
 
-module.exports = { createRecord, updateStatus, saveCarePlan, getRecord };
+module.exports = {
+  createRecord,
+  updateStatus,
+  saveCarePlan,
+  getRecord
+};

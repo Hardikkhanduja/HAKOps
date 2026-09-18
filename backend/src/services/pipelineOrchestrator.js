@@ -1,74 +1,114 @@
 /**
- * pipelineOrchestrator.js — AI pipeline orchestration.
- * Hardik owns this file fully — it is glue code, not AI work.
+ * pipelineOrchestrator.js
  *
- * Flow: getRecord → extractText → simplifyAndStructure → translate
- *       → saveCarePlan → updateStatus("ready")
+ * Application → Python AWS/AI pipeline bridge.
  *
- * CRITICAL CONTRACT:
- * - This function ALWAYS resolves (never rejects).
- * - On any error: writes status "error" to the repository and returns.
- * - This guarantees the frontend's 120-second status poller always gets
- *   a terminal state ("ready" or "error") and never polls indefinitely.
- *
- * Called fire-and-forget from confirmUpload (no await on the call site).
- * The HTTP 200 response is sent before this function completes.
+ * Node owns the API/application flow.
+ * Python owns the actual AWS + AI processing:
+ * S3 → Textract → Gemini → Validator → Translate → DynamoDB
  */
+
 'use strict';
 
-const textractService    = require('./textractService');
-const bedrockService     = require('./bedrockService');
-const translateService   = require('./translateService');
+const { spawn } = require('child_process');
 const carePlanRepository = require('./carePlanRepository');
 
-/**
- * Runs the full document processing pipeline for a care plan record.
- * Always resolves — never rejects.
- * @param {string} id — Care plan record UUID
- * @returns {Promise<void>}
- */
+const PYTHON = '/home/ec2-user/discharge-companion-aws/venv/bin/python3';
+const PIPELINE_DIR = '/home/ec2-user/discharge-companion-aws';
+
 async function processDocument(id) {
   try {
-    // Load record to get preferred language
     const record = await carePlanRepository.getRecord(id);
+
     if (!record) {
       console.error(`[Pipeline] Record not found: ${id}`);
       return;
     }
 
-    const s3Key = `documents/${id}`;
-    console.log(`[Pipeline] Starting: ${id} (lang: ${record.preferredLanguage})`);
+const language = record.preferredLanguage || record.language || 'en';
+    console.log(
+      `[Pipeline] Starting Python AWS pipeline: ${id} (lang: ${language})`
+    );
 
-    // Step 1: OCR — extract raw text from the uploaded document
-    const rawText = await textractService.extractText(s3Key);
-    console.log(`[Pipeline] Textract done: ${id} (${rawText.length} chars)`);
+    await runPythonPipeline(id, language);
 
-    // Step 2: AI — convert raw text to structured care plan
-    const carePlanShape = await bedrockService.simplifyAndStructure(rawText);
-    console.log(`[Pipeline] Bedrock done: ${id}`);
+    console.log(`[Pipeline] Python pipeline completed: ${id}`);
 
-    // Step 3: Translate — convert strings to patient's preferred language
-    const translated = await translateService.translate(carePlanShape, record.preferredLanguage);
-    console.log(`[Pipeline] Translate done: ${id}`);
-
-    // Step 4: Persist
-    // patientName default: Kamal will extract this from Textract/Bedrock output
-    const patientName = record.patientName || 'Patient';
-    await carePlanRepository.saveCarePlan(id, { patientName, carePlan: translated });
+    // Python pipeline saves the final care plan to DynamoDB.
+    // Node's repository is still being migrated to DynamoDB.
     await carePlanRepository.updateStatus(id, 'ready');
 
     console.log(`[Pipeline] Complete: ${id} — status: ready`);
 
   } catch (err) {
-    // Always write error — never leave record stuck in "processing"
     console.error(`[Pipeline] Error for ${id}:`, err.message);
+
     try {
-      await carePlanRepository.updateStatus(id, 'error', err.message || 'Pipeline failed');
+      await carePlanRepository.updateStatus(
+        id,
+        'error',
+        err.message || 'Pipeline failed'
+      );
     } catch (updateErr) {
-      console.error(`[Pipeline] Could not write error status for ${id}:`, updateErr.message);
+      console.error(
+        `[Pipeline] Could not write error status for ${id}:`,
+        updateErr.message
+      );
     }
-    // Do NOT re-throw — the HTTP 200 was already sent
   }
+}
+
+function runPythonPipeline(id, language) {
+  return new Promise((resolve, reject) => {
+    const env = {
+      ...process.env,
+      DOCUMENT_ID: id,
+      TARGET_LANGUAGE: language,
+      GEMINI_MODEL: process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite'
+    };
+
+    const child = spawn(
+      PYTHON,
+      ['pipeline.py'],
+      {
+        cwd: PIPELINE_DIR,
+        env
+      }
+    );
+
+    let stdout = '';
+    let stderr = '';
+
+    child.stdout.on('data', (data) => {
+      const output = data.toString();
+      stdout += output;
+      process.stdout.write(`[Python] ${output}`);
+    });
+
+    child.stderr.on('data', (data) => {
+      const output = data.toString();
+      stderr += output;
+      process.stderr.write(`[Python] ${output}`);
+    });
+
+    child.on('error', (err) => {
+      reject(err);
+    });
+
+    child.on('close', (code) => {
+      if (code === 0) {
+        resolve(stdout);
+      } else {
+        reject(
+          new Error(
+            `Python pipeline exited with code ${code}: ${
+              stderr.trim() || stdout.trim() || 'Unknown error'
+            }`
+          )
+        );
+      }
+    });
+  });
 }
 
 module.exports = { processDocument };

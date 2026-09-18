@@ -48,11 +48,10 @@ async function getPresignedUploadUrl(id, fileName, fileType) {
     // which the real server accepts and discards (no actual S3 write in dev).
     return `http://localhost:${process.env.PORT || 4000}/dev/upload/${id}`;
   }
-  const command = new PutObjectCommand({
-    Bucket:      S3_BUCKET,
-    Key:         `documents/${id}`,
-    ContentType: fileType,
-  });
+const command = new PutObjectCommand({
+  Bucket: S3_BUCKET,
+  Key: `documents/${id}`,
+});
   return getSignedUrl(s3Client, command, { expiresIn: EXPIRY_SECONDS });
 }
 

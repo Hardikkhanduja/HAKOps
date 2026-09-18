@@ -1,31 +1,31 @@
 {
-    "name":  "hakops-backend",
-    "version":  "0.1.0",
-    "description":  "Discharge Companion backend â€” mock server for frontend development; real AWS pipeline (Textract/Bedrock/Translate) to be added by Kamal.",
-    "main":  "src/mockServer.js",
-    "scripts":  {
-                    "mock":  "node src/mockServer.js",
-                    "start":  "node src/server.js",
-                    "test":  "jest --runInBand"
-                },
-    "dependencies":  {
-                         "@aws-sdk/client-dynamodb":  "^3.1134.0",
-                         "@aws-sdk/client-s3":  "^3.1134.0",
-                         "@aws-sdk/lib-dynamodb":  "^3.1134.0",
-                         "@aws-sdk/s3-request-presigner":  "^3.1134.0",
-                         "@vendia/serverless-express":  "^4.12.6",
-                         "cors":  "^2.8.5",
-                         "express":  "^4.19.2",
-                         "uuid":  "^14.0.2"
-                     },
-    "devDependencies":  {
-                            "fast-check":  "^4.10.1",
-                            "jest":  "^30.5.1"
-                        },
-    "jest":  {
-                 "testEnvironment":  "node",
-                 "testMatch":  [
-                                   "**/__tests__/**/*.test.js"
-                               ]
-             }
+    "name": "hakops-backend",
+    "version": "0.1.0",
+    "description": "Discharge Companion backend â€” mock server for frontend development; real AWS pipeline (Textract/Bedrock/Translate) to be added by Kamal.",
+    "main": "src/mockServer.js",
+    "scripts": {
+        "mock": "node src/mockServer.js",
+        "start": "node src/server.js",
+        "test": "jest --runInBand"
+    },
+    "dependencies": {
+        "@aws-sdk/client-dynamodb": "^3.1134.0",
+        "@aws-sdk/client-s3": "^3.1134.0",
+        "@aws-sdk/lib-dynamodb": "^3.1134.0",
+        "@aws-sdk/s3-request-presigner": "^3.1134.0",
+        "@vendia/serverless-express": "^4.12.6",
+        "cors": "^2.8.5",
+        "express": "^4.19.2",
+        "uuid": "^9.0.1"
+    },
+    "devDependencies": {
+        "fast-check": "^4.10.1",
+        "jest": "^30.5.1"
+    },
+    "jest": {
+        "testEnvironment": "node",
+        "testMatch": [
+            "**/__tests__/**/*.test.js"
+        ]
+    }
 }
