@@ -1,3 +1,4 @@
+import LogoMark from "../components/LogoMark.jsx";
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -15,17 +16,7 @@ const STEPS = [
   { label: "Building your care checklist",   icon: "✅" },
 ];
 
-function BridgeMark() {
-  return (
-    <svg width="24" height="18" viewBox="0 0 26 20" fill="none" aria-hidden="true">
-      <path d="M1 17 Q13 1 25 17" stroke="white" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
-      <line x1="7"  y1="17" x2="7"  y2="10.5" stroke="white" strokeWidth="2.2" strokeLinecap="round"/>
-      <line x1="13" y1="17" x2="13" y2="6"    stroke="white" strokeWidth="2.2" strokeLinecap="round"/>
-      <line x1="19" y1="17" x2="19" y2="10.5" stroke="white" strokeWidth="2.2" strokeLinecap="round"/>
-      <line x1="1"  y1="17" x2="25" y2="17"   stroke="white" strokeWidth="2.2" strokeLinecap="round"/>
-    </svg>
-  );
-}
+
 
 export default function StatusScreen() {
   const { id }    = useParams();
@@ -68,7 +59,7 @@ export default function StatusScreen() {
   const BrandBar = (
     <div className="px-4 flex items-center gap-2.5 border-b"
       style={{ background: "linear-gradient(135deg, #0F6B5C 0%, #0A4F44 100%)", minHeight: "56px", borderColor: "rgba(255,255,255,0.12)" }}>
-      <BridgeMark />
+      <LogoMark size={30} white={true} />
       <div>
         <p className="font-extrabold text-base leading-none text-white">CareSetu</p>
         <p style={{ fontSize: "11px", color: "rgba(255,255,255,0.65)", lineHeight: 1 }}>Your bridge from hospital to home recovery</p>
