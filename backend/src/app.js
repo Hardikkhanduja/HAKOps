@@ -11,6 +11,7 @@ const cors         = require('cors');
 const uploadRoutes   = require('./routes/upload.routes');
 const statusRoutes   = require('./routes/status.routes');
 const carePlanRoutes = require('./routes/carePlan.routes');
+const sessionRoutes   = require('./routes/session.routes');
 const errorHandler   = require('./middleware/errorHandler');
 
 const app = express();
@@ -30,6 +31,7 @@ if (process.env.S3_BUCKET === 'caresetu-documents-dev' || !process.env.S3_BUCKET
 app.use('/api/upload', uploadRoutes);
 app.use('/api',        statusRoutes);
 app.use('/api',        carePlanRoutes);
+app.use('/api/session', sessionRoutes);
 
 // Central error handler — MUST be last
 app.use(errorHandler);
