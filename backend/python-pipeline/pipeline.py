@@ -3,6 +3,8 @@ import json
 import subprocess
 import sys
 
+from ai_providers.gemini import GeminiProvider
+
 
 def run_step(step_name, command):
     print("\n" + "=" * 50)
@@ -20,6 +22,42 @@ def run_step(step_name, command):
     print(f"✅ {step_name} completed")
 
 
+def generate_care_plan():
+
+    print("\n" + "=" * 50)
+    print("GENERATING CARE PLAN WITH GEMINI")
+    print("=" * 50)
+
+    with open(
+        "extracted_text.txt",
+        "r",
+        encoding="utf-8"
+    ) as file:
+        extracted_text = file.read()
+
+    provider = GeminiProvider()
+
+    care_plan = provider.process_discharge(
+        extracted_text
+    )
+
+    with open(
+        "gemini_care_plan.json",
+        "w",
+        encoding="utf-8"
+    ) as file:
+
+        json.dump(
+            care_plan,
+            file,
+            indent=4,
+            ensure_ascii=False
+        )
+
+    print("Gemini care plan generated.")
+    print("Saved to gemini_care_plan.json")
+
+
 def main():
 
     print("\n")
@@ -27,9 +65,14 @@ def main():
     print("DISCHARGE COMPANION PIPELINE")
     print("=" * 50)
 
-    target_language = os.getenv("TARGET_LANGUAGE", "hi")
+    target_language = os.getenv(
+        "TARGET_LANGUAGE",
+        "hi"
+    )
 
-    print(f"Target language: {target_language}")
+    print(
+        f"Target language: {target_language}"
+    )
 
     # 1. Textract
     run_step(
@@ -38,10 +81,7 @@ def main():
     )
 
     # 2. Gemini
-    run_step(
-        "STEP 2/5 — GENERATE CARE PLAN WITH GEMINI",
-        [sys.executable, "test_gemini.py"]
-    )
+    generate_care_plan()
 
     # 3. Validate
     run_step(
@@ -67,7 +107,10 @@ def main():
     print("=" * 50)
 
     print(f"\nLanguage: {target_language}")
-    print("S3 → Textract → Gemini → Validator → Translate → DynamoDB")
+    print(
+        "S3 → Textract → Gemini → Validator → "
+        "Translate → DynamoDB"
+    )
 
 
 if __name__ == "__main__":

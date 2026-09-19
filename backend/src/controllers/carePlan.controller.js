@@ -49,15 +49,13 @@ async function getCarePlan(req, res, next) {
 
         warningSigns: carePlan.warnings || [],
 
-        dietActivityRestrictions:
-          carePlan.important_instructions || []
+        dietActivityRestrictions: []
       },
 
       reminders: record.reminders || [],
 
       status: record.status
     });
-
   } catch (err) {
     next(err);
   }
