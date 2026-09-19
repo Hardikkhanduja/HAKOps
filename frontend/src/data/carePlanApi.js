@@ -12,6 +12,8 @@
  * Exported signature is IDENTICAL to the original — no component changes needed.
  * Kamal: configure S3 bucket CORS to allow PUT from the frontend origin.
  */
+import { getSessionId } from '../utils/session';
+
 const BASE_URL = '/api';
 
 /**
@@ -21,10 +23,15 @@ const BASE_URL = '/api';
  * @returns {Promise<{ id: string, status: string }>}
  */
 export async function uploadDischargeDocument(file, preferredLanguage) {
+  const sessionId = await getSessionId();
+
   // Step 1: init — get a presigned S3 PUT URL from the backend
   const initRes = await fetch(`${BASE_URL}/upload/init`, {
     method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Session-Id': sessionId,
+    },
     body:    JSON.stringify({
       fileName:          file.name,
       fileType:          file.type,
@@ -53,7 +60,10 @@ export async function uploadDischargeDocument(file, preferredLanguage) {
   // Step 3: confirm — tell the backend the file is in S3, trigger pipeline
   const confirmRes = await fetch(`${BASE_URL}/upload/confirm`, {
     method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Session-Id': sessionId,
+    },
     body:    JSON.stringify({ id }),
   });
   if (!confirmRes.ok) {
@@ -70,7 +80,10 @@ export async function uploadDischargeDocument(file, preferredLanguage) {
  * @returns {Promise<{ status: string }>}
  */
 export async function getProcessingStatus(id) {
-  const res = await fetch(`${BASE_URL}/status/${id}`);
+  const sessionId = await getSessionId();
+  const res = await fetch(`${BASE_URL}/status/${id}`, {
+    headers: { 'X-Session-Id': sessionId },
+  });
   if (!res.ok) throw new Error('Status check failed');
   return res.json();
 }
@@ -81,7 +94,10 @@ export async function getProcessingStatus(id) {
  * @returns {Promise<object>} — full care plan per docs/API_CONTRACT.md
  */
 export async function getCarePlan(id) {
-  const res = await fetch(`${BASE_URL}/care-plan/${id}`);
+  const sessionId = await getSessionId();
+  const res = await fetch(`${BASE_URL}/care-plan/${id}`, {
+    headers: { 'X-Session-Id': sessionId },
+  });
   if (!res.ok) throw new Error('Failed to fetch care plan');
   return res.json();
 }

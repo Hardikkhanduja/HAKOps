@@ -21,6 +21,19 @@ vi.mock("framer-motion", () => ({
   AnimatePresence: ({ children }) => children ?? null,
 }));
 
+// Mock react-leaflet and leaflet — canvas/DOM APIs not available in jsdom
+vi.mock("react-leaflet", () => ({
+  MapContainer:  ({ children }) => <div data-testid="map-container">{children}</div>,
+  TileLayer:     () => null,
+  Marker:        ({ children, eventHandlers }) => <div onClick={eventHandlers?.click}>{children}</div>,
+  Popup:         ({ children }) => <div>{children}</div>,
+  useMap:        () => ({ flyTo: () => {} }),
+}));
+vi.mock("leaflet", () => ({
+  default: { Icon: { Default: { prototype: {}, mergeOptions: () => {} } }, divIcon: () => ({}) },
+  Icon:    { Default: { prototype: {}, mergeOptions: () => {} } },
+  divIcon: () => ({}),
+}));
 vi.mock("react-router-dom", async (importOriginal) => {
   const actual = await importOriginal();
   return { ...actual, useNavigate: () => vi.fn(), useParams: () => ({ id: "demo-123" }) };

@@ -1,34 +1,105 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MapPin, Phone, MessageCircle, Navigation, Search, Star } from "lucide-react";
 import { useCarePlan } from "../context/CarePlanContext.js";
 import { PHARMACIES } from "../data/pharmacies.js";
 import { buildWhatsAppUrl } from "../utils/buildWhatsAppUrl.js";
 import PageHeader from "../components/PageHeader.jsx";
 
-/**
- * PharmacyScreen — Find Pharmacy.
- *
- * Uses real Chandigarh pharmacy data with valid phone numbers and Google Maps links.
- * WhatsApp share button uses the existing wa.me click-to-chat flow (no Business API).
- * Get Directions opens Google Maps directions to the pharmacy.
- * Map area is a static placeholder — live map integration is a separate spec.
- *
- * Filter chips (Within 5km, Open Now, All Services) filter the displayed list.
- */
+// Leaflet is loaded lazily inside a try/catch so a map failure
+// never crashes the whole pharmacy page.
+let L, MapContainer, TileLayer, Marker, Popup, useMap;
+let leafletReady = false;
+try {
+  L = (await import("leaflet")).default ?? (await import("leaflet"));
+  const rl = await import("react-leaflet");
+  ({ MapContainer, TileLayer, Marker, Popup, useMap } = rl);
+
+  // Fix Vite asset handling for default Leaflet marker icons
+  delete L.Icon.Default.prototype._getIconUrl;
+  L.Icon.Default.mergeOptions({
+    iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+    iconUrl:       "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+    shadowUrl:     "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+  });
+  leafletReady = true;
+} catch (e) {
+  console.warn("Leaflet failed to load:", e.message);
+}
+
+/** Fly map to selected pharmacy */
+function MapFlyTo({ lat, lng }) {
+  const map = useMap();
+  useEffect(() => { map.flyTo([lat, lng], 15, { duration: 0.8 }); }, [lat, lng]);
+  return null;
+}
+
+/** Live interactive map — only renders if Leaflet loaded successfully */
+function PharmacyMap({ pharmacies, selected, onSelect }) {
+  if (!leafletReady || !MapContainer) {
+    return (
+      <div className="rounded-2xl flex items-center justify-center"
+        style={{ height: 260, background: "#E8F5F2", border: "1.5px solid var(--border)" }}>
+        <p style={{ fontSize: "13px", color: "var(--text-secondary)" }}>
+          Map unavailable — check your internet connection.
+        </p>
+      </div>
+    );
+  }
+
+  const sel = pharmacies[selected] ?? pharmacies[0];
+
+  return (
+    <div className="rounded-2xl overflow-hidden"
+      style={{ height: 260, border: "1.5px solid var(--border)" }}>
+      <MapContainer
+        center={[sel.lat, sel.lng]}
+        zoom={14}
+        style={{ height: "100%", width: "100%" }}
+        scrollWheelZoom
+      >
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+        <MapFlyTo lat={sel.lat} lng={sel.lng} />
+        {pharmacies.map((p, i) => (
+          <Marker
+            key={p.id}
+            position={[p.lat, p.lng]}
+            eventHandlers={{ click: () => onSelect(i) }}
+          >
+            <Popup>
+              <div style={{ minWidth: 160 }}>
+                <p style={{ fontWeight: 700, fontSize: 13, margin: "0 0 3px" }}>{p.name}</p>
+                <p style={{ fontSize: 11, color: "#5B6560", margin: "0 0 2px" }}>{p.hours}</p>
+                <p style={{ fontSize: 11, fontWeight: 700, color: p.isOpen ? "#059669" : "#C0392B", margin: 0 }}>
+                  {p.isOpen ? "Open Now" : "Closed"}
+                </p>
+                <a href={p.directionsUrl} target="_blank" rel="noopener noreferrer"
+                  style={{ display: "inline-block", marginTop: 6, fontSize: 11, color: "#0F6B5C", fontWeight: 700 }}>
+                  Get Directions →
+                </a>
+              </div>
+            </Popup>
+          </Marker>
+        ))}
+      </MapContainer>
+    </div>
+  );
+}
 
 const FILTER_TABS = ["Within 5km", "Open Now", "All Services"];
 
 export default function PharmacyScreen() {
-  const { carePlan }   = useCarePlan();
-  const patientName    = carePlan.patient.name;
-  const uploadedAt     = carePlan.originalDocument?.uploadedAt ?? null;
-  const missingDate    = !uploadedAt;
+  const { carePlan } = useCarePlan();
+  const patientName  = carePlan.patient.name;
+  const uploadedAt   = carePlan.originalDocument?.uploadedAt ?? null;
+  const missingDate  = !uploadedAt;
 
-  const [activeFilter, setActiveFilter] = useState(2); // "All Services" default
+  const [activeFilter, setActiveFilter] = useState(2);
   const [selected, setSelected]         = useState(0);
   const [search, setSearch]             = useState("");
 
-  // Apply filters
   const filtered = PHARMACIES.filter(p => {
     if (search && !p.name.toLowerCase().includes(search.toLowerCase()) &&
         !p.address.toLowerCase().includes(search.toLowerCase())) return false;
@@ -37,8 +108,8 @@ export default function PharmacyScreen() {
     return true;
   });
 
-  const sel    = filtered[selected] ?? PHARMACIES[0];
-  const waUrl  = missingDate ? null : buildWhatsAppUrl(sel, patientName, uploadedAt);
+  const sel   = filtered[selected] ?? PHARMACIES[0];
+  const waUrl = missingDate ? null : buildWhatsAppUrl(sel, patientName, uploadedAt);
 
   return (
     <div className="min-h-full pb-8">
@@ -57,22 +128,17 @@ export default function PharmacyScreen() {
             </p>
           </div>
         </div>
-        {/* Location pill */}
         <div className="flex items-center gap-2 rounded-xl px-3 py-1.5 shrink-0"
           style={{ background: "var(--brand-tint)", border: "1px solid var(--brand-tint-mid)" }}>
           <MapPin className="h-3.5 w-3.5" style={{ color: "var(--brand)" }} aria-hidden="true" />
           <span style={{ fontSize: "12px", color: "var(--brand)", fontWeight: 600 }}>Sector 35, Chandigarh</span>
-          <button style={{ fontSize: "12px", color: "var(--brand)", fontWeight: 700, background: "none", border: "none", cursor: "pointer" }}>
-            Change
-          </button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-0 px-6">
 
-        {/* ── LEFT: search + filters + list ── */}
+        {/* ── LEFT: list ── */}
         <div className="lg:col-span-2 space-y-3 lg:pr-4">
-
           {/* Search */}
           <div className="flex items-center gap-2 rounded-xl px-3 py-2.5"
             style={{ background: "var(--card)", border: "1.5px solid var(--border)" }}>
@@ -83,18 +149,17 @@ export default function PharmacyScreen() {
               style={{ fontSize: "13px", color: "var(--text-primary)" }} />
           </div>
 
-          {/* Filter chips */}
+          {/* Filters */}
           <div className="flex gap-2">
             {FILTER_TABS.map((t, i) => (
               <button key={t} onClick={() => { setActiveFilter(i); setSelected(0); }}
-                className="rounded-full px-3 py-1 text-xs font-semibold transition-all"
-                style={{ background: activeFilter===i ? "var(--brand)" : "var(--muted-fill)", color: activeFilter===i ? "#ffffff" : "var(--text-secondary)", border: "none", cursor: "pointer" }}>
+                className="rounded-full px-3 py-1 text-xs font-semibold"
+                style={{ background: activeFilter===i ? "var(--brand)" : "var(--muted-fill)", color: activeFilter===i ? "#fff" : "var(--text-secondary)", border: "none", cursor: "pointer" }}>
                 {t}
               </button>
             ))}
           </div>
 
-          {/* Missing date warning */}
           {missingDate && (
             <div role="alert" className="rounded-xl px-3 py-2.5"
               style={{ background: "var(--status-attention-bg)", border: "1px solid var(--status-attention-border)", fontSize: "12px", color: "var(--status-attention)", fontWeight: 600 }}>
@@ -102,7 +167,6 @@ export default function PharmacyScreen() {
             </div>
           )}
 
-          {/* Pharmacy list */}
           {filtered.length === 0 ? (
             <div className="text-center py-8 rounded-2xl" style={{ background: "var(--muted-fill)", border: "2px dashed var(--border)" }}>
               <p style={{ fontSize: "13px", color: "var(--text-secondary)" }}>No pharmacies match your search.</p>
@@ -123,47 +187,32 @@ export default function PharmacyScreen() {
                           <span className="rounded-full w-2 h-2 shrink-0"
                             style={{ background: p.isOpen ? "#059669" : "#C0392B", display: "inline-block" }} />
                           <p style={{ fontSize: "14px", fontWeight: 700, color: "var(--text-primary)" }}>{p.name}</p>
-                          {p.isOpen && (
-                            <span style={{ fontSize: "10px", color: "#059669", fontWeight: 700 }}>Open Now</span>
-                          )}
+                          {p.isOpen && <span style={{ fontSize: "10px", color: "#059669", fontWeight: 700 }}>Open Now</span>}
                         </div>
                         <p style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "2px" }}>
                           {p.address.split(",").slice(0, 2).join(",")}
                         </p>
-                        <p style={{ fontSize: "11px", color: "var(--text-secondary)" }}>
-                          {p.services.join(" + ")}
-                        </p>
-                        {/* Rating */}
                         {p.rating && (
                           <div className="flex items-center gap-1 mt-1">
                             <Star className="h-3 w-3" style={{ color: "#F59E0B", fill: "#F59E0B" }} aria-hidden="true" />
-                            <span style={{ fontSize: "11px", fontWeight: 600, color: "var(--text-primary)" }}>{p.rating}</span>
-                            <span style={{ fontSize: "11px", color: "var(--text-secondary)" }}>({p.reviews} reviews)</span>
+                            <span style={{ fontSize: "11px", fontWeight: 600 }}>{p.rating}</span>
+                            <span style={{ fontSize: "11px", color: "var(--text-secondary)" }}>({p.reviews})</span>
                           </div>
                         )}
                       </div>
                       <div className="shrink-0 text-right">
                         <p style={{ fontSize: "12px", fontWeight: 700, color: "var(--brand)" }}>{p.distance}</p>
-                        <div className="flex gap-1.5 mt-1 flex-wrap justify-end">
-                          {/* Call button */}
-                          {p.displayPhone !== "No number listed" ? (
+                        <div className="flex gap-1.5 mt-1 justify-end">
+                          {p.displayPhone !== "Open 24 hours" && (
                             <a href={`tel:+${p.phone}`}
                               className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold"
-                              style={{ background: "var(--muted-fill)", color: "var(--text-secondary)" }}
-                              aria-label={`Call ${p.name}`}>
+                              style={{ background: "var(--muted-fill)", color: "var(--text-secondary)" }}>
                               <Phone className="h-3 w-3" aria-hidden="true" /> Call
                             </a>
-                          ) : (
-                            <span className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs"
-                              style={{ background: "var(--muted-fill)", color: "var(--text-secondary)", opacity: 0.5 }}>
-                              No phone
-                            </span>
                           )}
-                          {/* Directions button — opens Google Maps */}
                           <a href={p.directionsUrl} target="_blank" rel="noopener noreferrer"
                             className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold"
-                            style={{ background: "var(--brand-tint)", color: "var(--brand)" }}
-                            aria-label={`Get directions to ${p.name}`}>
+                            style={{ background: "var(--brand-tint)", color: "var(--brand)" }}>
                             <Navigation className="h-3 w-3" aria-hidden="true" /> Directions
                           </a>
                         </div>
@@ -174,45 +223,16 @@ export default function PharmacyScreen() {
               ))}
             </ul>
           )}
-
-          {/* Can't find banner */}
-          <div className="rounded-2xl px-4 py-3 flex items-center justify-between gap-3"
-            style={{ background: "var(--brand-tint)", border: "1.5px solid var(--brand-tint-mid)" }}>
-            <div>
-              <p style={{ fontSize: "13px", fontWeight: 700, color: "var(--brand)" }}>Can't find a medicine?</p>
-              <p style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
-                Try another nearby pharmacy or ask for generic alternatives.
-              </p>
-            </div>
-            <button style={{ fontSize: "12px", fontWeight: 700, color: "var(--brand)", background: "none", border: "none", cursor: "pointer", whiteSpace: "nowrap" }}>
-              Search Alternative
-            </button>
-          </div>
         </div>
 
-        {/* ── RIGHT: map placeholder + selected pharmacy detail ── */}
+        {/* ── RIGHT: map + detail ── */}
         <div className="lg:col-span-3 space-y-3 mt-4 lg:mt-0 lg:pl-4">
 
-          {/* Static map placeholder */}
-          <div className="rounded-2xl overflow-hidden relative"
-            style={{ background: "#E8F5F2", border: "1.5px solid var(--border)", minHeight: "200px" }}>
-            <svg width="100%" height="200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              {[0,40,80,120,160,200].map(y => <line key={`h${y}`} x1="0" y1={y} x2="100%" y2={y} stroke="#C7E9E2" strokeWidth="1" />)}
-              {[0,100,200,300,400,500].map(x => <line key={`v${x}`} x1={x} y1="0" x2={x} y2="200" stroke="#C7E9E2" strokeWidth="1" />)}
-              <line x1="0" y1="100" x2="100%" y2="100" stroke="#A7D7CF" strokeWidth="3" />
-              <line x1="200" y1="0" x2="200" y2="200" stroke="#A7D7CF" strokeWidth="3" />
-              <circle cx="200" cy="100" r="14" fill="var(--brand)" />
-              <text x="200" y="105" textAnchor="middle" fontSize="14" fill="white">📍</text>
-            </svg>
-            <div className="absolute top-2 right-2 rounded-lg px-2 py-1"
-              style={{ background: "var(--card)", border: "1px solid var(--border)", fontSize: "10px", color: "var(--text-secondary)" }}>
-              Static map — live map in future release
-            </div>
-          </div>
+          {/* Live map */}
+          <PharmacyMap pharmacies={filtered.length ? filtered : PHARMACIES} selected={selected} onSelect={setSelected} />
 
-          {/* Selected pharmacy detail card */}
+          {/* Selected detail */}
           <div className="rounded-2xl p-4" style={{ background: "var(--card)", border: "1.5px solid var(--border)", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
-            {/* Header */}
             <div className="flex items-start justify-between gap-2 mb-3">
               <div>
                 <div className="flex items-center gap-2">
@@ -227,11 +247,10 @@ export default function PharmacyScreen() {
               <p style={{ fontSize: "15px", fontWeight: 800, color: "var(--brand)" }}>{sel.distance}</p>
             </div>
 
-            {/* Details */}
             <div className="space-y-1 mb-3">
               <p style={{ fontSize: "13px", color: "var(--text-secondary)" }}>📍 {sel.address}</p>
               <p style={{ fontSize: "12px", color: "var(--text-secondary)" }}>⏰ {sel.hours}</p>
-              {sel.displayPhone !== "No number listed" && (
+              {sel.displayPhone !== "Open 24 hours" && (
                 <p style={{ fontSize: "12px", color: "var(--text-secondary)" }}>📞 {sel.displayPhone}</p>
               )}
               {sel.rating && (
@@ -242,60 +261,47 @@ export default function PharmacyScreen() {
               )}
             </div>
 
-            {/* Services */}
             <div className="flex flex-wrap gap-1.5 mb-4">
               {sel.services.map(s => (
                 <span key={s} className="rounded-full px-2.5 py-1 text-xs font-semibold"
-                  style={{ background: "var(--brand-tint)", color: "var(--brand)" }}>
-                  {s}
-                </span>
+                  style={{ background: "var(--brand-tint)", color: "var(--brand)" }}>{s}</span>
               ))}
             </div>
 
-            {/* Action buttons */}
-            <div className="grid grid-cols-2 gap-2">
-              {/* Call button */}
-              {sel.displayPhone !== "No number listed" ? (
+            <div className="grid grid-cols-2 gap-2 mb-2">
+              {sel.displayPhone !== "Open 24 hours" ? (
                 <a href={`tel:+${sel.phone}`}
                   className="flex items-center justify-center gap-2 rounded-xl py-2.5 font-bold text-sm"
-                  style={{ background: "var(--muted-fill)", color: "var(--text-primary)", border: "1.5px solid var(--border)", textDecoration: "none" }}
-                  aria-label={`Call ${sel.name}`}>
+                  style={{ background: "var(--muted-fill)", color: "var(--text-primary)", border: "1.5px solid var(--border)", textDecoration: "none" }}>
                   <Phone className="h-4 w-4" aria-hidden="true" /> Call
                 </a>
               ) : (
-                <div className="flex items-center justify-center gap-2 rounded-xl py-2.5 font-bold text-sm opacity-40"
+                <div className="flex items-center justify-center gap-2 rounded-xl py-2.5 font-bold text-sm opacity-50"
                   style={{ background: "var(--muted-fill)", color: "var(--text-secondary)", border: "1.5px solid var(--border)" }}>
-                  <Phone className="h-4 w-4" aria-hidden="true" /> No Phone
+                  <Phone className="h-4 w-4" aria-hidden="true" /> 24 hrs
                 </div>
               )}
-
-              {/* Get Directions — opens Google Maps */}
               <a href={sel.directionsUrl} target="_blank" rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2 rounded-xl py-2.5 font-bold text-sm"
-                style={{ background: "var(--brand)", color: "#ffffff", textDecoration: "none", boxShadow: "0 3px 10px rgba(15,107,92,0.3)" }}
-                aria-label={`Get directions to ${sel.name} on Google Maps`}>
+                style={{ background: "var(--brand)", color: "#fff", textDecoration: "none", boxShadow: "0 3px 10px rgba(15,107,92,0.3)" }}>
                 <Navigation className="h-4 w-4" aria-hidden="true" /> Get Directions
               </a>
             </div>
 
-            {/* WhatsApp share — send prescription to pharmacy */}
-            <div className="mt-2">
-              {waUrl ? (
-                <a href={waUrl} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 w-full rounded-xl py-2.5 font-bold text-sm"
-                  style={{ background: "#25D366", color: "#ffffff", boxShadow: "0 3px 10px rgba(37,211,102,0.3)", textDecoration: "none" }}
-                  aria-label={`Share prescription with ${sel.name} via WhatsApp`}>
-                  <MessageCircle className="h-4 w-4" aria-hidden="true" />
-                  Share Prescription on WhatsApp
-                </a>
-              ) : (
-                <div className="flex items-center justify-center gap-2 w-full rounded-xl py-2.5 font-bold text-sm opacity-40"
-                  style={{ background: "#25D366", color: "#ffffff" }}>
-                  <MessageCircle className="h-4 w-4" aria-hidden="true" />
-                  Share Prescription on WhatsApp
-                </div>
-              )}
-            </div>
+            {waUrl ? (
+              <a href={waUrl} target="_blank" rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 w-full rounded-xl py-2.5 font-bold text-sm"
+                style={{ background: "#25D366", color: "#fff", boxShadow: "0 3px 10px rgba(37,211,102,0.3)", textDecoration: "none" }}>
+                <MessageCircle className="h-4 w-4" aria-hidden="true" />
+                Share Prescription on WhatsApp
+              </a>
+            ) : (
+              <div className="flex items-center justify-center gap-2 w-full rounded-xl py-2.5 font-bold text-sm opacity-40"
+                style={{ background: "#25D366", color: "#fff" }}>
+                <MessageCircle className="h-4 w-4" aria-hidden="true" />
+                Share Prescription on WhatsApp
+              </div>
+            )}
           </div>
         </div>
       </div>

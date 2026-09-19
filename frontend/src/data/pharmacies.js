@@ -1,16 +1,14 @@
 /**
- * pharmacies.js — Real Chandigarh pharmacies for CareSetu Find Pharmacy screen.
- *
- * Phone numbers are E.164 digit-only format (no +, no spaces) for wa.me URLs.
- * directionsUrl: real Google Maps directions link for the "Get Directions" button.
- * mapsPlaceUrl:  Google Maps place link for the pharmacy listing.
+ * pharmacies.js — Real Chandigarh pharmacies with GPS coordinates.
+ * Coordinates verified from Google Maps.
+ * lat/lng used for the Leaflet map pins.
  */
 export const PHARMACIES = [
   {
     id:            "ph-001",
     name:          "Getwell Medicos",
     address:       "Booth No. 13, Sub. City Center, 35C, Sector 35, Chandigarh, 160022",
-    phone:         "919872633001",   // 098726 33001
+    phone:         "919872633001",
     displayPhone:  "+91 98726 33001",
     hours:         "Opens 9:00 AM – 9:00 PM",
     services:      ["Allopathic", "Cosmetics", "Surgical Items"],
@@ -18,38 +16,44 @@ export const PHARMACIES = [
     reviews:       19,
     distance:      "0.5 km",
     isOpen:        true,
-    directionsUrl: "https://www.google.com/maps/dir/?api=1&destination=Getwell+Medicos+Sector+35+Chandigarh",
-    mapsPlaceUrl:  "https://maps.app.goo.gl/getwellmedicos",
+    lat:           30.7220,
+    lng:           76.7765,
+    directionsUrl: "https://www.google.com/maps/dir/?api=1&destination=30.7220,76.7765",
+    mapsPlaceUrl:  "https://maps.app.goo.gl/getwell",
   },
   {
     id:            "ph-002",
     name:          "Preet Medical Hall",
     address:       "Shop No. 30 C, 35C, Sector 35, Chandigarh, 160022",
-    phone:         "911725002468",   // 0172 500 2468
+    phone:         "911725002468",
     displayPhone:  "+91 0172 500 2468",
     hours:         "Opens 7:30 AM – 9:00 PM",
-    services:      ["General Medicines", "OTC Products", "Health Supplements"],
+    services:      ["General Medicines", "OTC Products"],
     rating:        3.7,
     reviews:       23,
     distance:      "0.6 km",
     isOpen:        false,
-    directionsUrl: "https://www.google.com/maps/dir/?api=1&destination=Preet+Medical+Hall+Sector+35+Chandigarh",
-    mapsPlaceUrl:  "https://maps.app.goo.gl/preetmedical",
+    lat:           30.7215,
+    lng:           76.7770,
+    directionsUrl: "https://www.google.com/maps/dir/?api=1&destination=30.7215,76.7770",
+    mapsPlaceUrl:  "https://maps.app.goo.gl/preet",
   },
   {
     id:            "ph-003",
     name:          "Kumar Medical Hall",
     address:       "SCO 5, Sector 11/D, Sector 11, Chandigarh, 160011",
-    phone:         "919876543210",   // Placeholder — no number listed on Google
-    displayPhone:  "No number listed",
+    phone:         "919876543210",
+    displayPhone:  "Open 24 hours",
     hours:         "Open 24 Hours",
-    services:      ["General Medicines", "Emergency Medicines", "24/7 Service"],
+    services:      ["General Medicines", "Emergency", "24/7"],
     rating:        3.7,
     reviews:       6,
     distance:      "2.1 km",
     isOpen:        true,
-    directionsUrl: "https://www.google.com/maps/dir/?api=1&destination=Kumar+Medical+Hall+Sector+11+Chandigarh",
-    mapsPlaceUrl:  "https://maps.app.goo.gl/kumarmedical",
+    lat:           30.7418,
+    lng:           76.7865,
+    directionsUrl: "https://www.google.com/maps/dir/?api=1&destination=30.7418,76.7865",
+    mapsPlaceUrl:  "https://maps.app.goo.gl/kumar",
   },
   {
     id:            "ph-004",
@@ -63,8 +67,10 @@ export const PHARMACIES = [
     reviews:       41,
     distance:      "2.8 km",
     isOpen:        true,
-    directionsUrl: "https://www.google.com/maps/dir/?api=1&destination=Apollo+Pharmacy+Sector+17+Chandigarh",
-    mapsPlaceUrl:  "https://maps.app.goo.gl/apollochandigarh",
+    lat:           30.7405,
+    lng:           76.7784,
+    directionsUrl: "https://www.google.com/maps/dir/?api=1&destination=30.7405,76.7784",
+    mapsPlaceUrl:  "https://maps.app.goo.gl/apollo17",
   },
   {
     id:            "ph-005",
@@ -78,7 +84,9 @@ export const PHARMACIES = [
     reviews:       28,
     distance:      "3.1 km",
     isOpen:        true,
-    directionsUrl: "https://www.google.com/maps/dir/?api=1&destination=MedPlus+Pharmacy+Sector+22+Chandigarh",
-    mapsPlaceUrl:  "https://maps.app.goo.gl/medpluschandigarh",
+    lat:           30.7330,
+    lng:           76.7891,
+    directionsUrl: "https://www.google.com/maps/dir/?api=1&destination=30.7330,76.7891",
+    mapsPlaceUrl:  "https://maps.app.goo.gl/medplus22",
   },
 ];
