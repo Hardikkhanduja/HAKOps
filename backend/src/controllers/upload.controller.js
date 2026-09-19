@@ -2,7 +2,7 @@
  * upload.controller.js — Two-step presigned upload flow.
  *
  * Step 1: initUpload   → validate + create DB record + return presigned PUT URL
- * Step 2: confirmUpload → trigger pipeline fire-and-forget + return { id, status }
+ * Step 2: confirmUpload → verify session + trigger pipeline + return { id, status }
  *
  * WHY two steps?
  * A 20 MB file going through API Gateway/Lambda hits the ~10 MB payload ceiling.
@@ -12,61 +12,140 @@
  * Kamal note: the pipeline trigger is confirmUpload (POST body), NOT an S3 event.
  * You can add an S3-event trigger later without changing the frontend.
  */
+
 'use strict';
 
-const { v4: uuidv4 }       = require('uuid');
-const carePlanRepository   = require('../services/carePlanRepository');
-const s3Service            = require('../services/s3Service');
+const { v4: uuidv4 } = require('uuid');
+const carePlanRepository = require('../services/carePlanRepository');
+const s3Service = require('../services/s3Service');
 const pipelineOrchestrator = require('../services/pipelineOrchestrator');
 
 const ALLOWED_FILE_TYPES = new Set([
-  'application/pdf', 'image/jpeg', 'image/png', 'image/webp',
+  'application/pdf',
+  'image/jpeg',
+  'image/png',
+  'image/webp',
 ]);
-const ALLOWED_LANGUAGES = new Set(['en', 'hi', 'pa', 'kn', 'ml', 'ta', 'te']);
+
+const ALLOWED_LANGUAGES = new Set([
+  'en',
+  'hi',
+  'pa',
+  'kn',
+  'ml',
+  'ta',
+  'te',
+]);
 
 function operationalError(message, statusCode = 400) {
   const err = new Error(message);
   err.isOperational = true;
-  err.statusCode    = statusCode;
+  err.statusCode = statusCode;
   return err;
 }
 
 /**
  * POST /api/upload/init
- * Body: { fileName, fileType, preferredLanguage }
- * Returns: { id, uploadUrl }
+ *
+ * Body:
+ * {
+ *   fileName,
+ *   fileType,
+ *   preferredLanguage
+ * }
+ *
+ * Header:
+ * X-Session-Id: <anonymous-session-id>
+ *
+ * Returns:
+ * {
+ *   id,
+ *   uploadUrl
+ * }
  */
 async function initUpload(req, res, next) {
   try {
-    const { fileName, fileType, preferredLanguage } = req.body;
+    const {
+      fileName,
+      fileType,
+      preferredLanguage,
+    } = req.body;
 
-    if (!fileName || typeof fileName !== 'string' || !fileName.trim())
-      return next(operationalError('fileName is required and must be a non-empty string.'));
+    // Anonymous session ID created by the frontend.
+    const sessionId = req.headers['x-session-id'];
 
-    if (!fileType)
-      return next(operationalError('fileType is required.'));
+    if (!sessionId) {
+      return res.status(400).json({
+        error: 'Missing session ID',
+      });
+    }
 
-    if (!ALLOWED_FILE_TYPES.has(fileType))
-      return next(operationalError(
-        `fileType must be one of: application/pdf, image/jpeg, image/png, image/webp. Got: "${fileType}"`
-      ));
+    if (
+      !fileName ||
+      typeof fileName !== 'string' ||
+      !fileName.trim()
+    ) {
+      return next(
+        operationalError(
+          'fileName is required and must be a non-empty string.'
+        )
+      );
+    }
 
-    if (!preferredLanguage)
-      return next(operationalError('preferredLanguage is required.'));
+    if (!fileType) {
+      return next(
+        operationalError('fileType is required.')
+      );
+    }
 
-    if (!ALLOWED_LANGUAGES.has(preferredLanguage))
-      return next(operationalError(
-        `preferredLanguage must be one of: en, hi, pa, kn, ml, ta, te. Got: "${preferredLanguage}"`
-      ));
+    if (!ALLOWED_FILE_TYPES.has(fileType)) {
+      return next(
+        operationalError(
+          `fileType must be one of: application/pdf, image/jpeg, image/png, image/webp. Got: "${fileType}"`
+        )
+      );
+    }
 
-    const id         = uuidv4();
+    if (!preferredLanguage) {
+      return next(
+        operationalError('preferredLanguage is required.')
+      );
+    }
+
+    if (!ALLOWED_LANGUAGES.has(preferredLanguage)) {
+      return next(
+        operationalError(
+          `preferredLanguage must be one of: en, hi, pa, kn, ml, ta, te. Got: "${preferredLanguage}"`
+        )
+      );
+    }
+
+    const id = uuidv4();
     const uploadedAt = new Date().toISOString();
 
-    await carePlanRepository.createRecord(id, { preferredLanguage, status: 'uploading', uploadedAt });
-    const uploadUrl = await s3Service.getPresignedUploadUrl(id, fileName, fileType);
+    // Create the upload record and associate it with this session.
+    await carePlanRepository.createRecord(id, {
+      preferredLanguage,
+      status: 'uploading',
+      uploadedAt,
+      sessionId,
+    });
 
-    console.log(`[Upload] Init: ${id} (${fileType}, ${preferredLanguage})`);
-    res.status(200).json({ id, uploadUrl });
+    const uploadUrl =
+      await s3Service.getPresignedUploadUrl(
+        id,
+        fileName,
+        fileType
+      );
+
+    console.log(
+      `[Upload] Init: ${id} (${fileType}, ${preferredLanguage}, session=${sessionId})`
+    );
+
+    res.status(200).json({
+      id,
+      uploadUrl,
+    });
 
   } catch (err) {
     next(err);
@@ -75,33 +154,85 @@ async function initUpload(req, res, next) {
 
 /**
  * POST /api/upload/confirm
- * Body: { id }
- * Returns: { id, status: "processing" }
- * Triggers pipeline fire-and-forget — responds immediately.
+ *
+ * Body:
+ * {
+ *   id
+ * }
+ *
+ * Header:
+ * X-Session-Id: <anonymous-session-id>
+ *
+ * Returns:
+ * {
+ *   id,
+ *   status: "processing"
+ * }
+ *
+ * The pipeline is triggered fire-and-forget.
  */
 async function confirmUpload(req, res, next) {
   try {
     const { id } = req.body;
 
-    if (!id)
-      return next(operationalError('id is required.'));
+    const sessionId = req.headers['x-session-id'];
 
-    const record = await carePlanRepository.getRecord(id);
-    if (!record)
-      return next(operationalError('Not found', 404));
+    if (!sessionId) {
+      return res.status(400).json({
+        error: 'Missing session ID',
+      });
+    }
 
-    await carePlanRepository.updateStatus(id, 'processing');
+    if (!id) {
+      return next(
+        operationalError('id is required.')
+      );
+    }
+
+    const record =
+      await carePlanRepository.getRecord(id);
+
+    if (!record) {
+      return next(
+        operationalError('Not found', 404)
+      );
+    }
+
+    // Make sure this upload belongs to the current session.
+    if (record.sessionId !== sessionId) {
+      return next(
+        operationalError(
+          'Not authorized for this upload.',
+          403
+        )
+      );
+    }
+
+    await carePlanRepository.updateStatus(
+      id,
+      'processing'
+    );
 
     // Fire-and-forget — do NOT await.
-    // pipelineOrchestrator always resolves (never throws) so this is safe.
+    // pipelineOrchestrator always resolves and handles
+    // pipeline errors internally.
     pipelineOrchestrator.processDocument(id);
 
-    console.log(`[Upload] Confirm: ${id} — pipeline started`);
-    res.status(200).json({ id, status: 'processing' });
+    console.log(
+      `[Upload] Confirm: ${id} — pipeline started`
+    );
+
+    res.status(200).json({
+      id,
+      status: 'processing',
+    });
 
   } catch (err) {
     next(err);
   }
 }
 
-module.exports = { initUpload, confirmUpload };
+module.exports = {
+  initUpload,
+  confirmUpload,
+};

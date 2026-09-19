@@ -37,7 +37,7 @@ const ddb = DynamoDBDocumentClient.from(client);
  */
 async function createRecord(
   id,
-  { preferredLanguage, status, uploadedAt }
+  { preferredLanguage, status, uploadedAt, sessionId }
 ) {
   await ddb.send(
     new PutCommand({
@@ -46,6 +46,7 @@ async function createRecord(
       Item: {
         patientId: id,
         documentId: id,
+sessionId: sessionId || null,
         language: preferredLanguage,
         preferredLanguage,
         status,

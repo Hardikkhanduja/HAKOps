@@ -47,26 +47,54 @@ def main():
 
         care_plan = json.load(file)
 
-    item = {
-        "patientId": PATIENT_ID,
-        "documentId": DOCUMENT_ID,
-        "language": LANGUAGE,
-        "sourceDocument": SOURCE_DOCUMENT,
-        "carePlan": care_plan,
-        "reviewStatus": "PENDING",
-        "status": "ready",
-        "createdAt": datetime.now(
-            timezone.utc
-        ).isoformat()
-    }
-
     print()
     print("================================")
     print("SAVING CARE PLAN")
     print("================================")
     print()
 
-    table.put_item(Item=item)
+    # IMPORTANT:
+    # Use update_item instead of put_item.
+    #
+    # This updates only the fields produced by the Python pipeline
+    # and preserves existing fields such as:
+    # - sessionId
+    # - preferredLanguage
+    # - reminders
+    # - uploadedAt
+    # - patientName
+    # - errorMessage
+
+    table.update_item(
+        Key={
+            "patientId": PATIENT_ID
+        },
+        UpdateExpression="""
+            SET
+                documentId = :documentId,
+                #language = :language,
+                sourceDocument = :sourceDocument,
+                carePlan = :carePlan,
+                reviewStatus = :reviewStatus,
+                #status = :status,
+                createdAt = :createdAt
+        """,
+        ExpressionAttributeNames={
+            "#language": "language",
+            "#status": "status"
+        },
+        ExpressionAttributeValues={
+            ":documentId": DOCUMENT_ID,
+            ":language": LANGUAGE,
+            ":sourceDocument": SOURCE_DOCUMENT,
+            ":carePlan": care_plan,
+            ":reviewStatus": "PENDING",
+            ":status": "ready",
+            ":createdAt": datetime.now(
+                timezone.utc
+            ).isoformat()
+        }
+    )
 
     print("Care plan saved successfully!")
     print()
@@ -75,6 +103,8 @@ def main():
     print("Review Status:", "PENDING")
     print("Status:", "ready")
     print("Source:", SOURCE_DOCUMENT)
+    print()
+    print("Existing session/reminder fields preserved.")
 
 
 if __name__ == "__main__":
