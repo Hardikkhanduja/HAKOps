@@ -1,0 +1,114 @@
+@import "tw-animate-css";
+@import "@fontsource-variable/geist";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+  CareSetu Design System
+  ----------------------
+  "Setu" = bridge (Hindi/Sanskrit).
+  Tagline: "Your bridge from hospital to home recovery."
+
+  Colour philosophy: ONE brand colour. All other colour carries status meaning.
+  - No pastel fills per-section — that is category decoration, not information.
+  - --status-attention / --status-danger signal urgency; nothing else does.
+
+  Type scale: deliberately large. Body at 17px minimum because caregivers
+  may be elderly, stressed, or less literate. Every heading is near-black,
+  never mid-gray.
+*/
+@layer base {
+  :root {
+    /* Brand */
+    --brand:           #0F6B5C;
+    --brand-dark:      #0A4F44;
+    --brand-tint:      #E8F5F2;
+    --brand-tint-mid:  #C7E9E2;
+
+    /* Surfaces */
+    --surface:         #FAF9F6;
+    --card:            #FFFFFF;
+
+    /* Typography */
+    --text-primary:    #1A1D1B;
+    --text-secondary:  #5B6560;
+
+    /* Status tokens — semantic only */
+    --status-ok:           #1E7A46;
+    --status-ok-bg:        #F0FBF4;
+    --status-ok-border:    #86EFAC;
+
+    --status-attention:    #92400E;
+    --status-attention-bg: #FFFBEB;
+    --status-attention-border: #FCD34D;
+
+    --status-danger:       #C0392B;
+    --status-danger-bg:    #FEF2F2;
+    --status-danger-border:#FCA5A5;
+
+    /* Neutral */
+    --border:          #E5E7E6;
+    --muted-fill:      #F3F4F3;
+
+    /* shadcn alias map — keeps component library working */
+    --background:      var(--surface);
+    --foreground:      var(--text-primary);
+    --card-foreground: var(--text-primary);
+    --primary:         var(--brand);
+    --primary-foreground: #FFFFFF;
+    --secondary:       var(--brand-tint);
+    --secondary-foreground: var(--brand);
+    --muted:           var(--muted-fill);
+    --muted-foreground: var(--text-secondary);
+    --accent:          var(--brand-tint);
+    --accent-foreground: var(--brand);
+    --destructive:     var(--status-danger);
+    --destructive-foreground: #FFFFFF;
+    --input:           var(--border);
+    --ring:            var(--brand);
+    --radius:          0.75rem;
+    --popover:         #FFFFFF;
+    --popover-foreground: var(--text-primary);
+  }
+
+  * {
+    border-color: var(--border);
+    outline-color: color-mix(in srgb, var(--ring) 50%, transparent);
+  }
+
+  html {
+    font-family: "Geist Variable", "Inter", system-ui, -apple-system, sans-serif;
+    font-size: 17px;   /* Minimum for caregiver readability */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background-color: var(--surface);
+    color: var(--text-primary);
+    line-height: 1.65;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--brand);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+}
+
+@layer utilities {
+  /* Minimum 56px tappable row */
+  .tap-row {
+    min-height: 56px;
+    display: flex;
+    align-items: center;
+  }
+  /* Minimum 52px primary button */
+  .btn-primary {
+    min-height: 52px;
+    font-weight: 700;
+    font-size: 17px;
+  }
+}

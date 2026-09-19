@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 280" role="img" aria-label="CareSetu logo">
+  <defs>
+    <!-- Dark teal gradient for house/cross -->
+    <linearGradient id="houseGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0F6B5C;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0A4F44;stop-opacity:1" />
+    </linearGradient>
+    <!-- Bright green gradient for cross -->
+    <linearGradient id="crossGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2ECC8B;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1DB88E;stop-opacity:1" />
+    </linearGradient>
+    <!-- Left leaf gradient (dark teal) -->
+    <linearGradient id="leafLeftGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0F6B5C;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0A4F44;stop-opacity:1" />
+    </linearGradient>
+    <!-- Right leaf gradient (bright green) -->
+    <linearGradient id="leafRightGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4CD98A;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2ECC8B;stop-opacity:1" />
+    </linearGradient>
+    <!-- Text gradient: "Care" dark teal, "Setu" bright green -->
+    <linearGradient id="textCareGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#0F6B5C" />
+      <stop offset="100%" style="stop-color:#0A4F44" />
+    </linearGradient>
+    <linearGradient id="textSetuGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#2ECC8B" />
+      <stop offset="100%" style="stop-color:#1DB88E" />
+    </linearGradient>
+  </defs>
+
+  <!-- ── Left leaf (dark teal, sweeps left and down) ── -->
+  <path d="M 80 195
+           C 40 185, 20 155, 30 115
+           C 50 130, 75 155, 80 195 Z"
+        fill="url(#leafLeftGrad)" />
+  <!-- Leaf vein -->
+  <path d="M 80 195 C 65 160, 42 138, 30 115"
+        fill="none" stroke="#0A4F44" stroke-width="1.5" stroke-linecap="round" opacity="0.4"/>
+
+  <!-- ── Right leaf (bright green, sweeps right and down) ── -->
+  <path d="M 218 195
+           C 258 185, 278 155, 268 115
+           C 248 130, 223 155, 218 195 Z"
+        fill="url(#leafRightGrad)" />
+  <!-- Leaf vein -->
+  <path d="M 218 195 C 233 160, 256 138, 268 115"
+        fill="none" stroke="#1a9e6e" stroke-width="1.5" stroke-linecap="round" opacity="0.4"/>
+
+  <!-- ── House body (rounded rectangle) ── -->
+  <rect x="82" y="90" width="136" height="105" rx="8" ry="8"
+        fill="url(#houseGrad)" />
+
+  <!-- ── Roof (thick arc / inverted V) ── -->
+  <!-- Left slope -->
+  <line x1="58" y1="103" x2="150" y2="42"
+        stroke="url(#houseGrad)" stroke-width="16" stroke-linecap="round"/>
+  <!-- Right slope -->
+  <line x1="150" y1="42" x2="242" y2="103"
+        stroke="url(#houseGrad)" stroke-width="16" stroke-linecap="round"/>
+
+  <!-- ── Medical cross (bright green, centred in house) ── -->
+  <!-- Vertical bar -->
+  <rect x="135" y="105" width="30" height="70" rx="6" fill="url(#crossGrad)" />
+  <!-- Horizontal bar -->
+  <rect x="115" y="125" width="70" height="30" rx="6" fill="url(#crossGrad)" />
+
+  <!-- ── Wordmark ── -->
+  <!-- "Care" in dark teal -->
+  <text x="55" y="250"
+        font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif"
+        font-size="52" font-weight="900" letter-spacing="-1"
+        fill="url(#textCareGrad)">Care</text>
+  <!-- "Setu" in bright green -->
+  <text x="175" y="250"
+        font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif"
+        font-size="52" font-weight="900" letter-spacing="-1"
+        fill="url(#textSetuGrad)">Setu</text>
+</svg>
