@@ -1,0 +1,4 @@
+boto3==1.42.97
+google-genai==1.47.0
+Pillow==11.3.0
+reportlab==5.0.1
