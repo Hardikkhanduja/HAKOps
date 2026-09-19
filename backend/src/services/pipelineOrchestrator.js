@@ -13,8 +13,13 @@
 const { spawn } = require('child_process');
 const carePlanRepository = require('./carePlanRepository');
 
-const PYTHON = '/home/ec2-user/discharge-companion-aws/venv/bin/python3';
-const PIPELINE_DIR = '/home/ec2-user/discharge-companion-aws';
+const PYTHON =
+  process.env.PYTHON_BIN ||
+  '/home/ec2-user/discharge-companion-aws/venv/bin/python3';
+
+const PIPELINE_DIR =
+  process.env.PIPELINE_DIR ||
+  '/home/ec2-user/discharge-companion-aws';
 
 async function processDocument(id) {
   try {
