@@ -44,7 +44,9 @@ const SECTION_CONFIG = {
           <p style={{ fontSize: "17px", fontWeight: 700, color: "var(--text-primary)", lineHeight: 1.35 }}>{item.description}</p>
           <div className="flex flex-wrap items-center gap-2 mt-1">
             <span style={{ fontSize: "15px", fontWeight: 600, color: "#6D28D9" }}>
-              {format(parseISO(item.date), "MMMM dd, yyyy")}
+              {item.date
+                ? format(parseISO(item.date), "MMMM dd, yyyy")
+                : (item.when || "Date not specified")}
             </span>
             <span className="text-xs rounded-full px-2 py-0.5 font-bold capitalize"
               style={{ background: "#EDE9FE", color: "#5B21B6" }}>{item.type}</span>

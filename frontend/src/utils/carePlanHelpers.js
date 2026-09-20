@@ -32,5 +32,9 @@ export function earliestDateByType(followUps, type) {
  */
 export function formatDisplayDate(isoDate) {
   if (!isoDate) return "None scheduled";
-  return format(parseISO(isoDate), "MMMM dd, yyyy");
+
+  const parsed = parseISO(isoDate);
+  if (Number.isNaN(parsed.getTime())) return "None scheduled";
+
+  return format(parsed, "MMMM dd, yyyy");
 }

@@ -112,9 +112,13 @@ export default function FollowUps() {
 
   const allFUs = [...(plan.followUps ?? []), ...extra];
 
-  const upcoming  = allFUs.filter(f => !done[f.description] && new Date(f.date) >= now);
+  const upcoming  = allFUs.filter(f =>
+    !done[f.description] && (!f.date || new Date(f.date) >= now)
+  );
   const completed = allFUs.filter(f => done[f.description]);
-  const overdue   = allFUs.filter(f => !done[f.description] && new Date(f.date) < now);
+  const overdue   = allFUs.filter(f =>
+    !done[f.description] && f.date && new Date(f.date) < now
+  );
 
   const tabs = [
     { label:"Upcoming",  count:upcoming.length  },
@@ -186,7 +190,7 @@ export default function FollowUps() {
                 <p style={{ fontSize:"14px", color:"var(--text-secondary)" }}>No items here.</p>
               </div>
             ) : visible.map((f, i) => {
-              const date  = parseISO(f.date);
+              const date = f.date ? parseISO(f.date) : null;
               const isDone = !!done[f.description];
               return (
                 <div key={i} className="rounded-2xl overflow-hidden"
@@ -195,9 +199,9 @@ export default function FollowUps() {
                     {/* Date badge */}
                     <div className="rounded-xl px-3 py-2 text-center shrink-0"
                       style={{ background: f.type === "test" ? "#EFF6FF" : "#EDE9FE", minWidth:"52px" }}>
-                      <p style={{ fontSize:"20px", fontWeight:800, color: f.type === "test" ? "#2563EB" : "#7C3AED", lineHeight:1 }}>{format(date,"dd")}</p>
-                      <p style={{ fontSize:"10px", fontWeight:700, color: f.type === "test" ? "#2563EB" : "#7C3AED", textTransform:"uppercase" }}>{format(date,"MMM")}</p>
-                      <p style={{ fontSize:"10px", color:"var(--text-secondary)" }}>{format(date,"EEE")}</p>
+                      <p style={{ fontSize:"20px", fontWeight:800, color: f.type === "test" ? "#2563EB" : "#7C3AED", lineHeight:1 }}>{date ? format(date, "dd") : "—"}</p>
+                      <p style={{ fontSize:"10px", fontWeight:700, color: f.type === "test" ? "#2563EB" : "#7C3AED", textTransform:"uppercase" }}>{date ? format(date, "MMM") : ""}</p>
+                      <p style={{ fontSize:"10px", color:"var(--text-secondary)" }}>{date ? format(date, "EEE") : "No date"}</p>
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2 flex-wrap">
@@ -226,7 +230,7 @@ export default function FollowUps() {
                       <div className="flex items-center gap-4 mt-2">
                         <div className="flex items-center gap-1">
                           <Clock className="h-3 w-3" style={{ color:"var(--text-secondary)" }} aria-hidden="true" />
-                          <span style={{ fontSize:"12px", color:"var(--text-secondary)" }}>{format(date,"hh:mm a")}</span>
+                          <span style={{ fontSize:"12px", color:"var(--text-secondary)" }}>{date ? format(date, "hh:mm a") : (f.when || "Date not specified")}</span>
                         </div>
                       </div>
                     </div>

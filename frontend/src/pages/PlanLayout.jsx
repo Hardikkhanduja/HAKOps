@@ -27,7 +27,20 @@ function normalizeCarePlan(data) {
       ...plan,
       medications: Array.isArray(plan.medications) ? plan.medications : [],
       followUps,
-      dailyTasks: Array.isArray(plan.dailyTasks) ? plan.dailyTasks : [],
+      dailyTasks: Array.isArray(plan.dailyTasks)
+  ? plan.dailyTasks.map((task) =>
+      typeof task === "string"
+        ? {
+            description: task,
+            frequency: "As instructed",
+          }
+        : {
+            ...task,
+            description: task.description || task.instructions || "Daily task",
+            frequency: task.frequency || "As instructed",
+          }
+    )
+  : [],
       warningSigns: Array.isArray(plan.warningSigns) ? plan.warningSigns : [],
       dietActivityRestrictions: Array.isArray(plan.dietActivityRestrictions)
         ? plan.dietActivityRestrictions
