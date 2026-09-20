@@ -12,6 +12,8 @@ const uploadRoutes   = require('./routes/upload.routes');
 const statusRoutes   = require('./routes/status.routes');
 const carePlanRoutes = require('./routes/carePlan.routes');
 const sessionRoutes   = require('./routes/session.routes');
+const authRoutes = require('./routes/auth.routes');
+const reminderRoutes = require('./routes/reminder.routes');
 const errorHandler   = require('./middleware/errorHandler');
 
 const app = express();
@@ -32,7 +34,8 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api',        statusRoutes);
 app.use('/api',        carePlanRoutes);
 app.use('/api/session', sessionRoutes);
-
+app.use('/api/auth', authRoutes);
+app.use('/api/reminders', reminderRoutes);
 // Central error handler — MUST be last
 app.use(errorHandler);
 

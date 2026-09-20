@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import UploadScreen   from "./pages/UploadScreen.jsx";
+import Register from "./pages/Register.jsx";
+import Login from "./pages/Login.jsx";
 import StatusScreen   from "./pages/StatusScreen.jsx";
 import PlanLayout     from "./pages/PlanLayout.jsx";
 import Dashboard      from "./pages/Dashboard.jsx";
@@ -23,6 +25,8 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
         <Route path="/"           element={<UploadScreen />} />
         <Route path="/status/:id" element={<StatusScreen />} />
 

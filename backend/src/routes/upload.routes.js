@@ -1,7 +1,17 @@
 'use strict';
-const { Router }  = require('express');
-const { initUpload, confirmUpload } = require('../controllers/upload.controller');
+
+const { Router } = require('express');
+
+const {
+  initUpload,
+  confirmUpload
+} = require('../controllers/upload.controller');
+
+const { requireSession } = require('../middleware/auth.middleware');
+
 const router = Router();
-router.post('/init',    initUpload);    // Step 1: validate + presigned PUT URL
-router.post('/confirm', confirmUpload); // Step 2: trigger pipeline + return { id, status }
+
+router.post('/init', requireSession, initUpload);
+router.post('/confirm', requireSession, confirmUpload);
+
 module.exports = router;

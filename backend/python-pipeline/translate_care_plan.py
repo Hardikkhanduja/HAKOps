@@ -86,30 +86,24 @@ def translate_care_plan(care_plan):
             medication["name"]
         )
 
-        # Translate only readable patient-facing
-        # fields. Preserve "Unclear".
+        # Medication instructions are preserved exactly as
+        # extracted. Do not machine-translate or reinterpret
+        # dosage/frequency/route/duration because OCR may contain
+        # abbreviations such as "BD" or uncertain text.
         translated["medications"][index]["dose"] = (
-            translate_text(
-                medication["dose"]
-            )
+            medication["dose"]
         )
 
         translated["medications"][index]["frequency"] = (
-            translate_text(
-                medication["frequency"]
-            )
+            medication["frequency"]
         )
 
         translated["medications"][index]["route"] = (
-            translate_text(
-                medication["route"]
-            )
+            medication["route"]
         )
 
         translated["medications"][index]["duration"] = (
-            translate_text(
-                medication["duration"]
-            )
+            medication["duration"]
         )
 
         # Boolean remains unchanged

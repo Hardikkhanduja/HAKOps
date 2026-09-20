@@ -37,7 +37,7 @@ const ddb = DynamoDBDocumentClient.from(client);
  */
 async function createRecord(
   id,
-  { preferredLanguage, status, uploadedAt, sessionId }
+  { preferredLanguage, status, uploadedAt, sessionId, userId, patientName }
 ) {
   await ddb.send(
     new PutCommand({
@@ -52,7 +52,7 @@ sessionId: sessionId || null,
         status,
         reviewStatus: 'PENDING',
         uploadedAt,
-        patientName: null,
+        patientName: patientName || null,
         carePlan: null,
         reminders: [],
         errorMessage: null
@@ -142,9 +142,50 @@ async function getRecord(id) {
   return result.Item || null;
 }
 
+
+/**
+ * Adds a reminder to an existing care plan record.
+ */
+async function addReminder(id, reminder) {
+  await ddb.send(
+    new UpdateCommand({
+      TableName: DYNAMODB_TABLE,
+      Key: {
+        patientId: id
+      },
+      UpdateExpression:
+        'SET reminders = list_append(if_not_exists(reminders, :emptyList), :reminder)',
+      ExpressionAttributeValues: {
+        ':emptyList': [],
+        ':reminder': [reminder]
+      }
+    })
+  );
+}
+
+/**
+ * Replaces the reminders array for an existing care plan record.
+ */
+async function saveReminders(id, reminders) {
+  await ddb.send(
+    new UpdateCommand({
+      TableName: DYNAMODB_TABLE,
+      Key: {
+        patientId: id
+      },
+      UpdateExpression: 'SET reminders = :reminders',
+      ExpressionAttributeValues: {
+        ':reminders': reminders
+      }
+    })
+  );
+}
+
 module.exports = {
   createRecord,
   updateStatus,
   saveCarePlan,
-  getRecord
+  getRecord,
+  addReminder,
+  saveReminders
 };

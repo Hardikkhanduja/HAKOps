@@ -72,7 +72,9 @@ async function initUpload(req, res, next) {
     } = req.body;
 
     // Anonymous session ID created by the frontend.
-    const sessionId = req.headers['x-session-id'];
+    const sessionId = req.sessionId;
+    const userId = req.user.userId;
+    const userName = req.user.name;
 
     if (!sessionId) {
       return res.status(400).json({
@@ -129,6 +131,8 @@ async function initUpload(req, res, next) {
       status: 'uploading',
       uploadedAt,
       sessionId,
+      userId,
+      patientName: userName,
     });
 
     const uploadUrl =
@@ -175,7 +179,7 @@ async function confirmUpload(req, res, next) {
   try {
     const { id } = req.body;
 
-    const sessionId = req.headers['x-session-id'];
+    const sessionId = req.sessionId;
 
     if (!sessionId) {
       return res.status(400).json({

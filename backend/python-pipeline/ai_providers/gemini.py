@@ -107,34 +107,64 @@ CRITICAL SAFETY RULES
 
 15. Include ALL medications found in the document.
 
-16. Include follow-up information found in the document.
+16. IMPORTANT — MEDICATION TABLE HANDLING:
 
-17. Include important restrictions and instructions found
+    The discharge summary may contain a medication table with
+    columns such as:
+
+        Name of Medicine | Dose | Frequency | Route | Duration
+
+    OCR can scramble table columns and row positions.
+
+    Therefore:
+
+    - Identify medication names from the medication section.
+    - Do NOT assign a dose, frequency, route, or duration to a
+      medication unless the OCR provides a clear and reliable
+      association.
+    - If a value appears in the medication section but its
+      association with a particular medicine is ambiguous,
+      DO NOT attach it to a medicine.
+    - Instead use "Unclear" for that medication field and
+      record the ambiguous OCR text in "unclear_information".
+    - Never copy the same dose/frequency/route/duration to
+      multiple medicines unless the document explicitly shows
+      that it applies to each medicine.
+    - Never use medical knowledge to reconstruct a damaged
+      medication name.
+    - Never convert an OCR fragment into a medically plausible
+      drug name.
+    - Preserve medication names as they appear in the OCR,
+      including imperfect spelling when necessary.
+
+17. Include follow-up information found in the document.
+
+18. Include important restrictions and instructions found
     in the document.
 
-18. NEVER create warning signs that are not present
+19. NEVER create warning signs that are not present
     in the document.
 
-19. NEVER provide new treatment recommendations.
+20. NEVER provide new treatment recommendations.
 
-20. NEVER recommend medicines, dosages, exercises,
+21. NEVER recommend medicines, dosages, exercises,
     diets, procedures, or treatments that are not explicitly
     present in the document.
 
-21. NEVER change the doctor's instructions.
+22. NEVER change the doctor's instructions.
 
-22. If information is unclear because of OCR quality,
+23. If information is unclear because of OCR quality,
     preserve the readable OCR text and mark it as requiring
     confirmation.
 
-23. Do not remove important information simply because
+24. Do not remove important information simply because
     it is difficult to understand.
 
-24. Return ONLY valid JSON.
+25. Return ONLY valid JSON.
 
-25. Do NOT return Markdown.
+26. Do NOT return Markdown.
 
-26. Do NOT return explanations outside the JSON.
+27. Do NOT return explanations outside the JSON.
 
 ========================
 FIELD RULES

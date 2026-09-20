@@ -14,8 +14,6 @@ DOCUMENT_ID = os.getenv("DOCUMENT_ID")
 if not DOCUMENT_ID:
     raise RuntimeError("DOCUMENT_ID environment variable is required")
 
-# The application UUID is used as patientId because
-# patientId is the existing DynamoDB partition key.
 PATIENT_ID = DOCUMENT_ID
 
 LANGUAGE = os.getenv("TARGET_LANGUAGE", "hi")
@@ -47,23 +45,15 @@ def main():
 
         care_plan = json.load(file)
 
+    # Patient name is extracted deterministically from OCR
+    # and carried through the AI/translation pipeline.
+    patient_name = care_plan.get("patient_name") or "Patient"
+
     print()
     print("================================")
     print("SAVING CARE PLAN")
     print("================================")
     print()
-
-    # IMPORTANT:
-    # Use update_item instead of put_item.
-    #
-    # This updates only the fields produced by the Python pipeline
-    # and preserves existing fields such as:
-    # - sessionId
-    # - preferredLanguage
-    # - reminders
-    # - uploadedAt
-    # - patientName
-    # - errorMessage
 
     table.update_item(
         Key={
@@ -75,6 +65,7 @@ def main():
                 #language = :language,
                 sourceDocument = :sourceDocument,
                 carePlan = :carePlan,
+                patientName = :patientName,
                 reviewStatus = :reviewStatus,
                 #status = :status,
                 createdAt = :createdAt
@@ -88,6 +79,7 @@ def main():
             ":language": LANGUAGE,
             ":sourceDocument": SOURCE_DOCUMENT,
             ":carePlan": care_plan,
+            ":patientName": patient_name,
             ":reviewStatus": "PENDING",
             ":status": "ready",
             ":createdAt": datetime.now(
@@ -99,6 +91,7 @@ def main():
     print("Care plan saved successfully!")
     print()
     print("Patient ID:", PATIENT_ID)
+    print("Patient Name:", patient_name)
     print("Language:", LANGUAGE)
     print("Review Status:", "PENDING")
     print("Status:", "ready")

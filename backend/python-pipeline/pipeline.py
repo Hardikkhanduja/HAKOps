@@ -2,8 +2,37 @@ import os
 import json
 import subprocess
 import sys
+import re
 
 from ai_providers.gemini import GeminiProvider
+
+
+
+def extract_patient_name(text):
+    """
+    Extract the patient name from the OCR field:
+        Patient Name:
+        <name>
+
+    This is deterministic and does not use medical inference.
+    """
+    match = re.search(
+        r"Patient\s+Name\s*:\s*\n?\s*([^\n]+)",
+        text,
+        flags=re.IGNORECASE
+    )
+
+    if not match:
+        return ""
+
+    name = match.group(1).strip()
+
+    # Avoid accidentally treating another field as a name.
+    if not name or ":" in name:
+        return ""
+
+    return name
+
 
 
 def run_step(step_name, command):
@@ -35,11 +64,22 @@ def generate_care_plan():
     ) as file:
         extracted_text = file.read()
 
+    patient_name = extract_patient_name(extracted_text)
+
+    if patient_name:
+        print(f"Patient name extracted from OCR: {patient_name}")
+    else:
+        print("Patient name could not be extracted from OCR.")
+
     provider = GeminiProvider()
 
     care_plan = provider.process_discharge(
         extracted_text
     )
+
+    # Preserve the deterministically extracted name.
+    # Do not ask the AI to infer identity.
+    care_plan["patient_name"] = patient_name
 
     with open(
         "gemini_care_plan.json",
