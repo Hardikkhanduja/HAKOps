@@ -47,6 +47,7 @@ async function createRecord(
         patientId: id,
         documentId: id,
 sessionId: sessionId || null,
+        userId: userId || null,
         language: preferredLanguage,
         preferredLanguage,
         status,

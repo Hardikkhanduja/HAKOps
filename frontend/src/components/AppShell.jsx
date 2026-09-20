@@ -9,7 +9,6 @@ import {
 } from "lucide-react";
 
 
-
 const SIDEBAR_BG    = "#0A4F44";
 const SIDEBAR_ACTIVE= "rgba(255,255,255,0.15)";
 const SIDEBAR_ACCENT= "#1DB88E";
@@ -116,7 +115,6 @@ export default function AppShell({ id, patientName, topBar, children }) {
           <SideLink to={`${base}/careplan`}    icon={LayoutDashboard} label="Care Plan" />
           <SideLink to={`${base}/medications`} icon={Pill}            label="Medicines" />
           <SideLink to={`${base}/tasks`}     icon={CheckSquare}  label="Daily Tasks" />
-          <SideLink to={`${base}/followups`}     icon={Calendar}     label="Follow-ups" />
           <SideLink to={`${base}/warnings`}     icon={AlertCircle}  label="Warning Signs" />
           <SideLink to={`${base}/diet`}     icon={Utensils}     label="Diet & Activity" />
           <SideLink to={`${base}/document`}     icon={BookOpen}     label="Original Document" />

@@ -1,7 +1,11 @@
 import { useState } from "react";
+
 import { useNavigate, Link } from "react-router-dom";
+
 import { motion } from "framer-motion";
+
 import { saveAuthSession } from "../utils/session";
+
 import "./Login.css";
 
 export default function Login() {
@@ -24,6 +28,7 @@ export default function Login() {
 
   async function handleSubmit(e) {
     e.preventDefault();
+
     setError("");
 
     if (!form.email || !form.password) {
@@ -34,13 +39,16 @@ export default function Login() {
     try {
       setLoading(true);
 
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(form),
-      });
+      const response = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL || "/api"}/auth/login`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(form),
+        }
+      );
 
       const data = await response.json();
 
@@ -106,7 +114,11 @@ export default function Login() {
             autoComplete="current-password"
           />
 
-          {error && <div className="error-message">{error}</div>}
+          {error && (
+            <div className="error-message">
+              {error}
+            </div>
+          )}
 
           <motion.button
             type="submit"

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, Outlet, Navigate } from "react-router-dom";
 import { getCarePlan } from "../data/carePlanApi.js";
 import { CarePlanContext } from "../context/CarePlanContext.js";
+import { getAuthSession } from "../utils/session.js";
 import AppShell       from "../components/AppShell.jsx";
 import TopBar         from "../components/TopBar.jsx";
 import LoadingSpinner from "../components/LoadingSpinner.jsx";
@@ -12,39 +13,82 @@ function normalizeCarePlan(data) {
 
   const plan = data.carePlan ?? {};
 
-  const followUps = Array.isArray(plan.followUps)
-    ? plan.followUps.map((f) => ({
-        ...f,
-        date: f.date || null,
-        description: f.description || f.instructions || f.when || "Follow-up",
-        type: f.type || "follow-up",
-      }))
-    : [];
+  const rawFollowUps = Array.isArray(plan.followUps)
+    ? plan.followUps
+    : Array.isArray(plan.follow_up)
+      ? [plan.follow_up]
+      : [];
+
+  const followUps = rawFollowUps.map((f) => ({
+    ...f,
+    date: f.date || null,
+    description:
+      f.description ||
+      f.instructions ||
+      f.when ||
+      "Follow-up",
+    type: f.type || "appointment",
+    when: f.when || "",
+    where: f.where || "",
+    doctor: f.doctor || "",
+    instructions: f.instructions || "",
+  }));
+
+  const patientName =
+    data.patientName ||
+    data.patient?.name ||
+    plan.patient_name ||
+    "";
 
   return {
     ...data,
+
+    patient: {
+      ...(data.patient || {}),
+      name: patientName,
+      preferredLanguage:
+        data.preferredLanguage ||
+        data.patient?.preferredLanguage ||
+        "en",
+    },
+
     carePlan: {
       ...plan,
-      medications: Array.isArray(plan.medications) ? plan.medications : [],
-      followUps,
-      dailyTasks: Array.isArray(plan.dailyTasks)
-  ? plan.dailyTasks.map((task) =>
-      typeof task === "string"
-        ? {
-            description: task,
-            frequency: "As instructed",
-          }
-        : {
-            ...task,
-            description: task.description || task.instructions || "Daily task",
-            frequency: task.frequency || "As instructed",
-          }
-    )
-  : [],
-      warningSigns: Array.isArray(plan.warningSigns) ? plan.warningSigns : [],
-      dietActivityRestrictions: Array.isArray(plan.dietActivityRestrictions)
-        ? plan.dietActivityRestrictions
+
+      medications: Array.isArray(plan.medications)
+        ? plan.medications
         : [],
+
+      followUps,
+
+      dailyTasks: Array.isArray(plan.dailyTasks)
+        ? plan.dailyTasks.map((task) =>
+            typeof task === "string"
+              ? {
+                  description: task,
+                  frequency: "As instructed",
+                }
+              : {
+                  ...task,
+                  description:
+                    task.description ||
+                    task.instructions ||
+                    "Daily task",
+                  frequency:
+                    task.frequency ||
+                    "As instructed",
+                }
+          )
+        : [],
+
+      warningSigns: Array.isArray(plan.warningSigns)
+        ? plan.warningSigns
+        : [],
+
+      dietActivityRestrictions:
+        Array.isArray(plan.dietActivityRestrictions)
+          ? plan.dietActivityRestrictions
+          : [],
     },
   };
 }
@@ -94,7 +138,13 @@ export default function PlanLayout() {
     );
   }
 
-  const patientName = carePlan?.patient?.name ?? "";
+const authSession = getAuthSession();
+const loggedInUser = authSession?.user;
+
+const patientName =
+  loggedInUser?.name ||
+  carePlan?.patient?.name ||
+  "Patient";
 
   return (
     <CarePlanContext.Provider value={{ carePlan, id }}>

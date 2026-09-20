@@ -10,6 +10,8 @@ import { useCarePlan } from "../context/CarePlanContext.js";
 import { earliestDateByType } from "../utils/carePlanHelpers.js";
 import { primaryTimeLabel, bucketFollowUp } from "../utils/taskHelpers.js";
 import ReviewRequiredBadge from "../components/ReviewRequiredBadge.jsx";
+import { getUITranslations } from "../utils/uiTranslations.js";
+import { getAuthSession } from "../utils/session.js";
 
 /* ─── Greeting ────────────────────────────────────────────── */
 function getGreeting() {
@@ -88,33 +90,56 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState(0);
   const [checkedItems, setCheckedItems] = useState({});
 
-  const { patient, carePlan: plan } = carePlan;
+const { patient, carePlan: plan } = carePlan;
+
+const authSession = getAuthSession();
+const loggedInUser = authSession?.user;
+
+const displayName =
+  loggedInUser?.name ||
+  patient?.name ||
+  "Patient";
+
+const t = getUITranslations(patient?.preferredLanguage || "en");
   const meds       = plan.medications              || [];
   const followUps  = plan.followUps                || [];
   const tasks      = plan.dailyTasks               || [];
   const warnings   = plan.warningSigns             || [];
   const reminders  = carePlan.reminders            || [];
 
-  const greeting   = getGreeting();
+  const greetingKey =
+    new Date().getHours() < 12
+      ? "goodMorning"
+      : new Date().getHours() < 17
+        ? "goodAfternoon"
+        : "goodEvening";
+
+  const greeting = t[greetingKey];
   const careTabs   = buildCareTabs(tasks, followUps);
   const tabItems   = [careTabs.today, careTabs.week, careTabs.upcoming];
   const tabLabels  = [`Today (${careTabs.today.length})`, `This Week (${careTabs.week.length})`, `Upcoming (${careTabs.upcoming.length})`];
 
   // Stat chips
-  const nearestAppt = followUps.filter(f => f.type === "appointment").sort((a,b) => a.date < b.date ? -1 : 1)[0];
+  const nearestAppt = followUps
+    .filter(f => f.type === "appointment" || f.type === "follow-up")
+    .sort((a, b) => {
+      if (!a.date) return 1;
+      if (!b.date) return -1;
+      return new Date(a.date) - new Date(b.date);
+    })[0];
   const nearestTest = followUps.filter(f => f.type === "test").sort((a,b) => a.date < b.date ? -1 : 1)[0];
   const nextRemind  = nearestReminderDays(reminders, followUps);
 
   const chips = [
     {
-      label: "Medicines",
+      label: t.medicines,
       value: meds.length.toString(),
       sub: `${meds.length} active`,
       icon: Pill,
       ...CHIP_STYLES[0],
     },
     {
-      label: "Next Appointment",
+      label: t.nextAppointment,
       value: nearestAppt
         ? (nearestAppt.date ? format(parseISO(nearestAppt.date), "dd MMM yyyy") : (nearestAppt.when || "Date not specified"))
         : "None",
@@ -123,7 +148,7 @@ export default function Dashboard() {
       ...CHIP_STYLES[1],
     },
     {
-      label: "Next Test",
+      label: t.nextTest,
       value: nearestTest
         ? (nearestTest.date ? format(parseISO(nearestTest.date), "dd MMM yyyy") : (nearestTest.when || "Date not specified"))
         : "None",
@@ -132,7 +157,7 @@ export default function Dashboard() {
       ...CHIP_STYLES[2],
     },
     {
-      label: "Next Reminder",
+      label: t.nextReminder,
       value: nextRemind ? `${nextRemind.days} day${nextRemind.days !== 1 ? "s" : ""}` : "None",
       sub: nextRemind ? format(nextRemind.date, "dd MMM yyyy") : "No reminders",
       icon: Bell,
@@ -150,11 +175,11 @@ export default function Dashboard() {
       {/* ── Breadcrumb + tagline ── */}
       <div className="flex items-center justify-between px-6 pt-4 pb-2">
         <p style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
-          Overview &rsaquo; <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>Dashboard</span>
+          {t.overview} &rsaquo; <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>{t.dashboard}</span>
         </p>
         <div className="flex items-center gap-2">
           <div className="rounded-xl px-4 py-1.5" style={{ background: "var(--brand)", color: "#fff", fontSize: "12px", fontWeight: 600 }}>
-            Small steps every day make a big difference.
+            {t.smallSteps}
           </div>
           <button onClick={() => window.location.reload()}
             className="rounded-xl p-1.5 border transition-colors hover:bg-gray-50"
@@ -168,7 +193,7 @@ export default function Dashboard() {
       {/* ── Greeting ── */}
       <div className="px-6 pb-4">
         <h1 style={{ fontSize: "24px", fontWeight: 800, color: "var(--text-primary)" }}>
-          {greeting}, {patient.name} 👋
+          {greeting}, {displayName} 👋
         </h1>
       </div>
 
@@ -177,7 +202,7 @@ export default function Dashboard() {
         {/* ── Today's Update — stat chips ── */}
         <section aria-labelledby="update-heading">
           <h2 id="update-heading" style={{ fontSize: "15px", fontWeight: 700, color: "var(--text-primary)", marginBottom: "10px" }}>
-            Today&rsquo;s Update
+            {t.todaysUpdate}
           </h2>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {chips.map((c) => {
@@ -213,7 +238,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b" style={{ borderColor: "var(--border)" }}>
               <div className="flex items-center gap-2">
                 <CheckSquare className="h-4 w-4" style={{ color: "var(--brand)" }} aria-hidden="true" />
-                <h2 style={{ fontSize: "15px", fontWeight: 700, color: "var(--text-primary)" }}>Today&rsquo;s Care</h2>
+                <h2 style={{ fontSize: "15px", fontWeight: 700, color: "var(--text-primary)" }}>{t.todaysCare}</h2>
               </div>
               <p style={{ fontSize: "11px", color: "var(--text-secondary)", fontWeight: 500 }}>
                 {format(new Date(), "EEE, dd MMM yyyy")}
@@ -238,7 +263,7 @@ export default function Dashboard() {
             <ul className="divide-y px-0 py-2 m-0 list-none" style={{ borderColor: "var(--border)", minHeight: "160px" }}>
               {tabItems[activeTab].length === 0 ? (
                 <li className="px-5 py-6 text-center">
-                  <p style={{ fontSize: "13px", color: "var(--text-secondary)" }}>No items for this period.</p>
+                  <p style={{ fontSize: "13px", color: "var(--text-secondary)" }}>{t.noItems}</p>
                 </li>
               ) : tabItems[activeTab].map(item => (
                 <li key={item.id}
@@ -275,7 +300,7 @@ export default function Dashboard() {
             <div className="px-5 py-3 border-t" style={{ borderColor: "var(--border)" }}>
               <button onClick={() => navigate("tasks")}
                 style={{ fontSize: "13px", fontWeight: 700, color: "var(--brand)", background: "none", border: "none", cursor: "pointer" }}>
-                View all tasks +
+                {t.viewAllTasks}
               </button>
             </div>
           </div>
@@ -289,7 +314,7 @@ export default function Dashboard() {
               <div className="flex items-center justify-between px-5 py-3.5 border-b" style={{ borderColor: "var(--border)" }}>
                 <div className="flex items-center gap-2">
                   <Pill className="h-4 w-4" style={{ color: "var(--brand)" }} aria-hidden="true" />
-                  <h2 style={{ fontSize: "14px", fontWeight: 700, color: "var(--text-primary)" }}>Medicines</h2>
+                  <h2 style={{ fontSize: "14px", fontWeight: 700, color: "var(--text-primary)" }}>{t.medicines}</h2>
                 </div>
                 <span className="rounded-full px-2 py-0.5 text-xs font-bold"
                   style={{ background: "#D1FAE5", color: "#059669" }}>
@@ -312,7 +337,7 @@ export default function Dashboard() {
               <div className="px-5 py-2.5 border-t" style={{ borderColor: "var(--border)" }}>
                 <button onClick={() => navigate("medications")}
                   style={{ fontSize: "13px", fontWeight: 700, color: "var(--brand)", background: "none", border: "none", cursor: "pointer" }}>
-                  View all medicines +
+                  {t.viewAllMedicines}
                 </button>
               </div>
             </div>
@@ -323,7 +348,7 @@ export default function Dashboard() {
               <div className="flex items-center justify-between px-5 py-3.5 border-b" style={{ borderColor: "var(--border)" }}>
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4" style={{ color: "#7C3AED" }} aria-hidden="true" />
-                  <h2 style={{ fontSize: "14px", fontWeight: 700, color: "var(--text-primary)" }}>Upcoming Appointments &amp; Tests</h2>
+                  <h2 style={{ fontSize: "14px", fontWeight: 700, color: "var(--text-primary)" }}>{t.upcomingAppointmentsTests}</h2>
                 </div>
                 <span className="rounded-full px-2 py-0.5 text-xs font-bold"
                   style={{ background: "#EDE9FE", color: "#7C3AED" }}>
@@ -359,14 +384,14 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Important Safety Information */}
+            {/* {t.importantSafety} */}
             {warnings.length > 0 && (
               <div className="rounded-2xl overflow-hidden"
                 style={{ background: "#FEF2F2", border: "1.5px solid var(--status-danger-border)", boxShadow: "0 2px 8px rgba(192,57,43,0.08)" }}>
                 <div className="flex items-center justify-between px-5 py-3.5 border-b" style={{ borderColor: "#FCA5A5" }}>
                   <div className="flex items-center gap-2">
                     <AlertTriangle className="h-4 w-4" style={{ color: "var(--status-danger)" }} aria-hidden="true" />
-                    <h2 style={{ fontSize: "14px", fontWeight: 700, color: "var(--status-danger)" }}>Important Safety Information</h2>
+                    <h2 style={{ fontSize: "14px", fontWeight: 700, color: "var(--status-danger)" }}>{t.importantSafety}</h2>
                   </div>
                   <span className="rounded-full px-2 py-0.5 text-xs font-bold"
                     style={{ background: "var(--status-danger)", color: "#fff" }}>
@@ -375,7 +400,7 @@ export default function Dashboard() {
                 </div>
                 <div className="px-5 pt-3 pb-2">
                   <p style={{ fontSize: "12px", color: "#7F1D1D", marginBottom: "8px", lineHeight: 1.5 }}>
-                    If you notice any of these symptoms, contact your primary physician or hospital immediately:
+                    {t.contactPhysician}
                   </p>
                 </div>
                 <ul className="divide-y list-none p-0 m-0" style={{ borderColor: "#FCA5A5" }}>
@@ -392,16 +417,16 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* ── Quick Actions ── */}
+        {/* ── {t.quickActions} ── */}
         <section aria-labelledby="qa-heading">
           <h2 id="qa-heading" style={{ fontSize: "15px", fontWeight: 700, color: "var(--text-primary)", marginBottom: "10px" }}>
-            Quick Actions
+            {t.quickActions}
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
               {
-                label: "Find Pharmacy",
-                sub:   "Locate store",
+                label: t.findPharmacy,
+                sub:   t.locateStore,
                 icon:  MapPin,
                 color: "#059669",
                 bg:    "#D1FAE5",
@@ -409,8 +434,8 @@ export default function Dashboard() {
                 action: () => navigate("pharmacy"),
               },
               {
-                label: "Original PDF",
-                sub:   "Download paper",
+                label: t.originalPdf,
+                sub:   t.downloadPaper,
                 icon:  FileText,
                 color: "#2563EB",
                 bg:    "#DBEAFE",
@@ -418,8 +443,8 @@ export default function Dashboard() {
                 action: () => navigate("document"),
               },
               {
-                label: "Reminders",
-                sub:   "Alert triggers",
+                label: "{t.reminders}",
+                sub:   t.alertTriggers,
                 icon:  Bell,
                 color: "#7C3AED",
                 bg:    "#EDE9FE",
@@ -427,8 +452,8 @@ export default function Dashboard() {
                 action: () => navigate("reminders"),
               },
               {
-                label: "Open WhatsApp",
-                sub:   "Direct support",
+                label: t.openWhatsApp,
+                sub:   t.directSupport,
                 icon:  MessageCircle,
                 color: "#EA580C",
                 bg:    "#FFEDD5",

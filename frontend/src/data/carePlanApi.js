@@ -14,7 +14,8 @@
  */
 import { getSessionId } from '../utils/session';
 
-const BASE_URL = '/api';
+const BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || '/api';
 
 /**
  * Uploads a discharge document and kicks off the pipeline.

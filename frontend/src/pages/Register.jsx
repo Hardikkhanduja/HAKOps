@@ -1,6 +1,9 @@
 import { useState } from "react";
+
 import { useNavigate, Link } from "react-router-dom";
+
 import { motion } from "framer-motion";
+
 import "./Register.css";
 
 export default function Register() {
@@ -13,6 +16,7 @@ export default function Register() {
   });
 
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
 
   function handleChange(e) {
@@ -24,7 +28,9 @@ export default function Register() {
 
   async function handleSubmit(e) {
     e.preventDefault();
+
     setError("");
+    setSuccess("");
 
     if (!form.name || !form.email || !form.password) {
       setError("Please fill in all fields.");
@@ -39,21 +45,32 @@ export default function Register() {
     try {
       setLoading(true);
 
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(form),
-      });
+      const response = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL || "/api"}/auth/register`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(form),
+        }
+      );
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Registration failed.");
+        throw new Error(
+          data.error || "Registration failed."
+        );
       }
 
-      navigate("/login");
+      setSuccess(
+        "Registration successful. Redirecting to login..."
+      );
+
+      setTimeout(() => {
+        navigate("/login");
+      }, 1200);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -78,14 +95,17 @@ export default function Register() {
           transition={{ duration: 0.5 }}
         />
 
-        <h1>Create your CareSetu account</h1>
+        <h1>Create your account</h1>
 
         <p className="subtitle">
-          Keep your care information organized and accessible.
+          Create an account to manage your care information.
         </p>
 
         <form onSubmit={handleSubmit}>
-          <label htmlFor="name">Full Name</label>
+          <label htmlFor="name">
+            Full Name
+          </label>
+
           <input
             id="name"
             type="text"
@@ -93,9 +113,13 @@ export default function Register() {
             placeholder="Enter your name"
             value={form.name}
             onChange={handleChange}
+            autoComplete="name"
           />
 
-          <label htmlFor="email">Email Address</label>
+          <label htmlFor="email">
+            Email Address
+          </label>
+
           <input
             id="email"
             type="email"
@@ -103,9 +127,13 @@ export default function Register() {
             placeholder="name@example.com"
             value={form.email}
             onChange={handleChange}
+            autoComplete="email"
           />
 
-          <label htmlFor="password">Password</label>
+          <label htmlFor="password">
+            Password
+          </label>
+
           <input
             id="password"
             type="password"
@@ -113,9 +141,28 @@ export default function Register() {
             placeholder="Create a password"
             value={form.password}
             onChange={handleChange}
+            autoComplete="new-password"
           />
 
-          {error && <div className="error-message">{error}</div>}
+          {error && (
+            <div className="error-message">
+              {error}
+            </div>
+          )}
+
+          {success && (
+            <div
+              className="success-message"
+              style={{
+                color: "#059669",
+                marginBottom: "12px",
+                fontSize: "14px",
+                fontWeight: 600,
+              }}
+            >
+              {success}
+            </div>
+          )}
 
           <motion.button
             type="submit"
@@ -123,13 +170,17 @@ export default function Register() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            {loading ? "Creating account..." : "Create Account"}
+            {loading
+              ? "Creating account..."
+              : "Create Account"}
           </motion.button>
         </form>
 
         <p className="login-link">
           Already have an account?{" "}
-          <Link to="/login">Sign in</Link>
+          <Link to="/login">
+            Sign in
+          </Link>
         </p>
       </motion.div>
     </div>

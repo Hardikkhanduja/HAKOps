@@ -1,59 +1,88 @@
-# Dependencies — never commit these
+# ==========================================
+# Dependencies
+# ==========================================
 node_modules/
 */node_modules/
 
-# Build outputs
+# ==========================================
+# Build outputs / caches
+# ==========================================
 dist/
 build/
 .vite/
 
-# Environment / secrets — NEVER commit
+# ==========================================
+# Environment files / secrets
+# ==========================================
 .env
-.env.local
-.env.*.local
+.env.*
 *.env
 
-# AWS credentials (extra safety net)
+# Allow safe example environment files
+!.env.example
+
+# AWS credentials / configuration
 .aws/
 credentials
+credentials.json
 
-# Kiro IDE internals
+# Private keys / certificates
+*.pem
+*.key
+*.crt
+
+# ==========================================
+# Kiro / IDE
+# ==========================================
 .kiro/
+.idea/
+.vscode/
 
+# ==========================================
 # OS
+# ==========================================
 .DS_Store
 Thumbs.db
 
+# ==========================================
 # Logs
+# ==========================================
 *.log
 npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
 
+# ==========================================
 # Test coverage
+# ==========================================
 coverage/
 
-# Vite cache
-.vite/
+# ==========================================
 # Python
+# ==========================================
 venv/
+.venv/
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+*.egg-info/
 
-# Secrets
-.env
-.env.*
-!.env.example
-
-# Generated output
+# ==========================================
+# Generated AI / pipeline output
+# ==========================================
 extracted_text.txt
 gemini_care_plan.json
 translated_care_plan.json
 care_plan.json
 
-# Medical/test documents
+translated_text_*.txt
+
+# ==========================================
+# Medical / test documents
+# NEVER commit patient documents
+# ==========================================
 *.pdf
 *.jpeg
 *.jpg
 *.png
-
-# Translation test outputs
-translated_text_*.txt
