@@ -47,7 +47,9 @@ function buildCareTabs(dailyTasks, followUps) {
     const item = {
       id: `fu-${f.description}`,
       description: f.description,
-      time: format(parseISO(f.date), "dd MMM yyyy"),
+      time: f.date
+        ? format(parseISO(f.date), "dd MMM yyyy")
+        : (f.when || "Date not specified"),
       kind: "followup",
     };
     const bucket = bucketFollowUp(f.date, now);
@@ -113,14 +115,18 @@ export default function Dashboard() {
     },
     {
       label: "Next Appointment",
-      value: nearestAppt ? format(parseISO(nearestAppt.date), "dd MMM yyyy") : "None",
+      value: nearestAppt
+        ? (nearestAppt.date ? format(parseISO(nearestAppt.date), "dd MMM yyyy") : (nearestAppt.when || "Date not specified"))
+        : "None",
       sub: nearestAppt ? nearestAppt.description : "No appointment",
       icon: Calendar,
       ...CHIP_STYLES[1],
     },
     {
       label: "Next Test",
-      value: nearestTest ? format(parseISO(nearestTest.date), "dd MMM yyyy") : "None",
+      value: nearestTest
+        ? (nearestTest.date ? format(parseISO(nearestTest.date), "dd MMM yyyy") : (nearestTest.when || "Date not specified"))
+        : "None",
       sub: nearestTest ? nearestTest.description : "No test",
       icon: CheckSquare,
       ...CHIP_STYLES[2],
@@ -336,7 +342,9 @@ export default function Dashboard() {
                     <div className="flex-1 min-w-0">
                       <p style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)" }}>{f.description}</p>
                       <p style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
-                        {format(parseISO(f.date), "dd MMM yyyy")} &middot; <span className="capitalize">{f.type === "test" ? "Medical Test" : "Appointment"}</span>
+                        {f.date
+                          ? `${format(parseISO(f.date), "dd MMM yyyy")} · ${f.type === "test" ? "Medical Test" : "Appointment"}`
+                          : `${f.when || "Date not specified"} · ${f.type === "test" ? "Medical Test" : "Appointment"}`}
                       </p>
                     </div>
                     <ChevronRight className="h-4 w-4 shrink-0" style={{ color: "var(--text-secondary)" }} aria-hidden="true" />

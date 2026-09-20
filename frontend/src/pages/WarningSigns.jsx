@@ -33,8 +33,9 @@ function parseWarning(str) {
     "Increased redness or swelling at incision site": "Around incision or wound site.",
     "Difficulty breathing": "Shortness of breath or chest pain.",
   };
-  const title = str.split(".")[0].split(";")[0].trim();
-  const desc  = KNOWN[title] || str.length > title.length ? str.slice(title.length).replace(/^[.;,\s]+/, "") : "";
+  const safeStr = typeof str === "string" ? str : String(str ?? "");
+  const title = safeStr.split(".")[0].split(";")[0].trim();
+  const desc  = KNOWN[title] || safeStr.length > title.length ? safeStr.slice(title.length).replace(/^[.;,\s]+/, "") : "";
   return { title, desc };
 }
 

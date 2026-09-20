@@ -190,7 +190,7 @@ export default function PharmacyScreen() {
                           {p.isOpen && <span style={{ fontSize: "10px", color: "#059669", fontWeight: 700 }}>Open Now</span>}
                         </div>
                         <p style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "2px" }}>
-                          {p.address.split(",").slice(0, 2).join(",")}
+                          {(p.address ?? "").split(",").slice(0, 2).join(",")}
                         </p>
                         {p.rating && (
                           <div className="flex items-center gap-1 mt-1">

@@ -68,9 +68,11 @@ export default function CarePlanChecklist({ carePlan }) {
               <li key={i} className="flex items-start gap-2 text-sm py-1 border-b last:border-0">
                 <Calendar className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" aria-hidden="true" />
                 <div>
-                  <p>{f.description}</p>
+                  <p>{f.description || f.instructions || f.when || "Follow-up appointment"}</p>
                   <p className="text-muted-foreground text-xs">
-                    {format(parseISO(f.date), "MMMM dd, yyyy")} &middot; {f.type}
+                    {f.date
+                      ? `${format(parseISO(f.date), "MMMM dd, yyyy")} · ${f.type || "Follow-up"}`
+                      : `${f.when || "Date not specified"} · ${f.type || "Follow-up"}`}
                   </p>
                 </div>
               </li>

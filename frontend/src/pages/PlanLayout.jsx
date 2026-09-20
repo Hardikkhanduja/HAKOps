@@ -7,6 +7,35 @@ import TopBar         from "../components/TopBar.jsx";
 import LoadingSpinner from "../components/LoadingSpinner.jsx";
 import ErrorMessage   from "../components/ErrorMessage.jsx";
 
+function normalizeCarePlan(data) {
+  if (!data) return data;
+
+  const plan = data.carePlan ?? {};
+
+  const followUps = Array.isArray(plan.followUps)
+    ? plan.followUps.map((f) => ({
+        ...f,
+        date: f.date || null,
+        description: f.description || f.instructions || f.when || "Follow-up",
+        type: f.type || "follow-up",
+      }))
+    : [];
+
+  return {
+    ...data,
+    carePlan: {
+      ...plan,
+      medications: Array.isArray(plan.medications) ? plan.medications : [],
+      followUps,
+      dailyTasks: Array.isArray(plan.dailyTasks) ? plan.dailyTasks : [],
+      warningSigns: Array.isArray(plan.warningSigns) ? plan.warningSigns : [],
+      dietActivityRestrictions: Array.isArray(plan.dietActivityRestrictions)
+        ? plan.dietActivityRestrictions
+        : [],
+    },
+  };
+}
+
 export default function PlanLayout() {
   const { id }   = useParams();
   const [carePlan, setCarePlan] = useState(null);
@@ -18,7 +47,7 @@ export default function PlanLayout() {
     if (!id) return;
     getCarePlan(id)
       .then(data => {
-        setCarePlan(data);
+        setCarePlan(normalizeCarePlan(data));
         if (data?.patient?.preferredLanguage) setLanguage(data.patient.preferredLanguage);
         // Persist the last-used plan id so the sidebar can link to it from any screen
         sessionStorage.setItem('caresetu_last_plan_id', id);
